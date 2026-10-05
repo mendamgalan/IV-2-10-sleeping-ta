@@ -1,0 +1,47 @@
+# C build outputs
+*.o
+*.obj
+*.so
+*.so.*
+*.a
+*.out
+/build/
+
+# Python cache and virtual environments
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+env/
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Local editor settings
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Local secrets
+.env
+.env.*
+!.env.example
+
+# Temporary files
+*.tmp
+*.temp
+.~lock.*#
+~$*
+
+# Generated local run exports (keep reviewed evidence in docs/)
+/runs/
+/exports/
+
+# Keep source, tests, Makefile, README and documentation tracked.
+# Do not ignore all CSV, TXT, PNG or PDF files: they may be test evidence.
