@@ -1,0 +1,18 @@
+python3 -m unittest discover -s tests -v
+test_baseline_fifo (test_engine.EngineTests.test_baseline_fifo) ... ok
+test_invalid (test_engine.EngineTests.test_invalid) ... ok
+test_overload_and_maximum (test_engine.EngineTests.test_overload_and_maximum) ... ok
+test_reproducible_and_reset (test_engine.EngineTests.test_reproducible_and_reset) ... ok
+test_service_duration (test_engine.EngineTests.test_service_duration) ... ok
+test_single_student_no_rejection (test_engine.EngineTests.test_single_student_no_rejection) ... ok
+test_sleep_until_arrival (test_engine.EngineTests.test_sleep_until_arrival) ... ok
+test_zero_chairs (test_engine.EngineTests.test_zero_chairs) ... ok
+
+----------------------------------------------------------------------
+Ran 8 tests in 0.290s
+
+OK
+
+Linux-7.0.0-34-generic-x86_64-with-glibc2.43
+3.14.4
+gcc (Ubuntu 15.2.0-16ubuntu1) 15.2.0
