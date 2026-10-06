@@ -36,13 +36,26 @@ class App:
         self.log.pack(fill='x')
         ttk.Label(main,text='1 алхам = загварын 100 мс. Тохиргоог reset дарж хэрэглэнэ. Ирэх завсар нь оюутан бүрийн программчлах хугацаа.').pack(anchor='w',pady=7)
         self.reset(); root.protocol('WM_DELETE_WINDOW',self.close); root.after(100,self.loop)
+
+        #Оргилсайхан
     def reset(self):
         try:
             f=self.fields
-            values={k:int(f[k].get()) for k in ('n','chairs','seed')}
+
+            try:  # Тоо биш утга (abc, хоосон, 3.5) оруулбал энгийн алдаа өгнө Utga n too bish baiwal (abc, hooson, 3.5 geh met)
+
+                values={k:int(f[k].get()) for k in ('n','chairs','seed')}
+
+                times={k:float(f[k].get()) for k in ('amin','amax','hmin','hmax')}
+
+            except ValueError:raise ValueError('Буруу утга орууллаа.')
+            
+            if not 1<=values['n']<=40 or not 0<=values['chairs']<=20:raise ValueError('Буруу утга орууллаа.')  # 4294967297 gesen hyzgaar too 1 bolohoos sergiilew
+
             if not 0<=values['seed']<=4294967295: raise ValueError('Seed: 0–4294967295.')
+            
             for k in ('amin','amax','hmin','hmax'):
-                x=float(f[k].get())
+                x=times[k]
                 if not .1<=x<=600 or abs(x*10-round(x*10))>1e-6: raise ValueError('Хугацаа: 0.1–600 секунд, 0.1-ийн алхамтай.')
                 values[k]=round(x*10)
             self.model.reset(**values)
