@@ -1,0 +1,34 @@
+make: Entering directory '/workspace/scratch/66b6150d188a/ta-fixes/sleeping-ta'
+./build/resource_failure
+python3 -m unittest discover -s tests -v
+test_baseline_fifo (test_engine.EngineTests.test_baseline_fifo) ... ok
+test_invalid (test_engine.EngineTests.test_invalid) ... ok
+test_overload_and_maximum (test_engine.EngineTests.test_overload_and_maximum) ... ok
+test_reproducible_and_reset (test_engine.EngineTests.test_reproducible_and_reset) ... ok
+test_service_duration (test_engine.EngineTests.test_service_duration) ... ok
+test_single_student_no_rejection (test_engine.EngineTests.test_single_student_no_rejection) ... ok
+test_sleep_until_arrival (test_engine.EngineTests.test_sleep_until_arrival) ... ok
+test_zero_chairs (test_engine.EngineTests.test_zero_chairs) ... ok
+test_close_is_repeatable_idle_and_busy (test_regressions.RegressionTests.test_close_is_repeatable_idle_and_busy) ... ok
+test_failed_export_preserves_existing_file (test_regressions.RegressionTests.test_failed_export_preserves_existing_file) ... ok
+test_long_run_preserves_full_journal_and_live_tail (test_regressions.RegressionTests.test_long_run_preserves_full_journal_and_live_tail) ... ok
+test_maximum_valid_seed (test_regressions.RegressionTests.test_maximum_valid_seed) ... ok
+test_python_inputs_rejected_before_ctypes_conversion (test_regressions.RegressionTests.test_python_inputs_rejected_before_ctypes_conversion) ... ok
+test_reset_discards_old_history (test_regressions.RegressionTests.test_reset_discards_old_history) ... ok
+test_draw_uses_recent_log_not_entire_history (test_ui.UiTests.test_draw_uses_recent_log_not_entire_history) ... skipped 'График дэлгэц байхгүй: no display name and no $DISPLAY environment variable'
+test_invalid_inputs_preserve_current_run (test_ui.UiTests.test_invalid_inputs_preserve_current_run) ... skipped 'График дэлгэц байхгүй: no display name and no $DISPLAY environment variable'
+test_journal_failure_visible (test_ui.UiTests.test_journal_failure_visible) ... skipped 'График дэлгэц байхгүй: no display name and no $DISPLAY environment variable'
+test_pause_step_and_reset (test_ui.UiTests.test_pause_step_and_reset) ... skipped 'График дэлгэц байхгүй: no display name and no $DISPLAY environment variable'
+
+----------------------------------------------------------------------
+Ran 18 tests in 3.820s
+
+OK (skipped=4)
+make: Leaving directory '/workspace/scratch/66b6150d188a/ta-fixes/sleeping-ta'
+
+Review date: 2026-10-26
+Base commit: 76b8e9caeeeff6440c71fe0be1fa637390a451fa
+Linux-6.18.55-x86_64-with-glibc2.39
+Python 3.12.14
+gcc (Ubuntu 13.3.0-6ubuntu2~24.04) 13.3.0
+UI tests: skipped locally (no DISPLAY). GitHub CI has not run for these changes.
