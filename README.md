@@ -1,45 +1,71 @@
 # The Sleeping Teaching Assistant IV-2-10
-F.CSM302 Үйлдлийн систем, Бие даалт 1.
 
-C / POSIX Pthreads хөдөлгүүр + Python Tkinter удирдах цонх.
-Оюутан бүр, TA тусдаа OS thread. UI нь C хөдөлгүүрийн snapshot-ыг харуулж,
-тухайн хөдөлгүүрийг ажиллуулах, түр зогсоох, алхамчлах, reset хийх команд өгнө.
+F.CSM302 Үйлдлийн систем · Бие даалт 1
+
+C / POSIX Pthreads хөдөлгүүр, Python Tkinter удирдах цонхтой.
+Оюутан бүр болон TA тусдаа OS thread. Сандал, ирэх завсар, туслах хугацааг
+тохируулж, FIFO дараалал ба TA-ийн төлөвийг алхамчилж харуулна.
 
 ## Debian / Ubuntu дээр эхлүүлэх
+
 ```bash
 sudo apt update
-sudo apt install build-essential python3 python3-tk
+sudo apt install git build-essential python3 python3-tk
+git clone https://github.com/mendamgalan/IV-2-10-sleeping-ta.git
+cd IV-2-10-sleeping-ta/sleeping-ta
 make
 make run
 ```
-Python-ийн нэмэлт pip сан, интернет холболт ажиллах үед шаардлагагүй.
-Linux график орчин шаардлагатай; Windows дээр WSL2 + WSLg ашиглана.
-macOS болон native Windows энэ хувилбарын дэмжих орчин биш.
+
+Repository-г өмнө татсан бол Makefile байгаа `sleeping-ta` хавтас руу орно.
+Python-ийн нэмэлт pip сан ажиллуулахад хэрэггүй. Linux desktop эсвэл
+Windows-ийн WSL2 + WSLg шаардлагатай. Native Windows/macOS дэмжихгүй.
 
 ## Шалгах
+
+Repository-ийн үндсэн хавтсаас:
+
 ```bash
-make test
+make -C sleeping-ta test
 ```
-8 тест: FIFO, 0 сандал, 1 оюутан, их ачаалал, унтах/сэрэх,
-seed/reset, буруу оролт, үйлчилгээний хугацаа.
 
-## Файлууд
-- `src/engine.c`: thread, mutex, semaphore, FIFO, загварын цаг.
-- `src/model.py`: ctypes интерфейс.
-- `src/app.py`: үндсэн удирдах цонх.
-- `tests/test_engine.py`: хөдөлгүүрийн тест.
-- `docs/Manual.md`: хэрэглэгчийн болон operational заавар.
-- `docs/Report.md`: зохиомж, хэрэгжилт, туршилтын бодит үр дүн.
-- `docs/test-results.txt`: ажиллуулсан тестийн гаралт.
+Үүнд 14 хөдөлгүүр/интерфейсийн тест, 4 UI тест, C нөөцийн алдааны 3 нөхцөл орно.
+Дэлгэцгүй үед UI-ийн 4 тест SKIP болно. Бүгдийг ажиллуулахад:
 
-## Хугацааны загвар
-1 tick = 100 мс. Автомат горимд Tkinter 100 мс тутам хөдөлгүүрт tick өгнө.
-Pause үед загварын цаг зогсоно; Step яг нэг tick ажиллуулж дууссаныг хүлээнэ.
-Бодит `sleep()`-ийн оронд загварын цаг хэрэглэснээр pause/step найдвартай.
-Thread-үүд semaphore дээр бодитоор блоклогдоно, busy-wait байхгүй.
-Нэг tick дотор үйлчилгээ дуусах үйл явдлыг эхэлж, дараа нь оюутнуудыг
-эргэдэг дарааллаар ажиллуулна. Иймээс энэ нь CPU scheduling хэмжих benchmark биш.
+```bash
+sudo apt install xvfb
+xvfb-run -a make -C sleeping-ta test
+```
 
-AI хэрэглээ: энэ хэрэгжилт, баримт бичиг, тестийг OpenAI ChatGPT-ийн тусламжтай боловсруулав.
-Үндсэн эх сурвалж: өгсөн OS_BD1_Guide.pdf болон хэрэглэгчийн оруулсан
-Operating System Concepts, Project 2 — The Sleeping Teaching Assistant шаардлага.
+GitHub Actions нь push/PR бүрд warnings-as-errors build болон Xvfb-тэй тест хийнэ.
+
+## Удирдлага ба журнал
+
+- Run / Pause / Step / Reset нь C хөдөлгүүрийн цагийг удирдана.
+- 1 tick = загварын 100 мс; ирэх завсар нь оюутан тус бүрийн программчлах хугацаа.
+- UI зөвхөн сүүлийн 6 үйл явдлыг харуулна. Бүтэн түүх түр файлд хадгалагдана.
+- CSV экспорт нь бүх түүхийг хуулна; амжилтгүй бол өмнөх файлыг солихгүй.
+- Reset эсвэл хаахаас **өмнө** хэрэгтэй CSV-ээ экспортлоно. Түр түүх устдаг.
+- Диск дүүрвэл UI алдааг харуулж, дутуу CSV-г бүтэн мэт экспортлохгүй.
+
+## Thread-ийн гүйцэтгэлийн загвар
+
+Энэ нь **алхамчилсан загвар**. Worker-үүд бодит Pthreads боловч нэг tick дотор
+үйлдлүүдийг ack semaphore-аар дараалан гүйцэтгүүлдэг. Pause үед загварын цаг
+зогсоно; Step бүрэн дууссаны дараа snapshot уншина. Ижил seed, тохиргоо ижил
+үйл явдал өгнө. Энэ хувилбар чөлөөт OS scheduling-ийн race/stress benchmark биш,
+тусдаа real-time горимгүй. TA сул үед `work` semaphore дээр бодитоор блоклогдоно.
+
+## Баримт бичиг
+
+- [Хэрэглэгчийн болон operational заавар](sleeping-ta/docs/Manual.md)
+- [10 бүлэгтэй тайлан](sleeping-ta/docs/Report.md)
+- [Report PDF](sleeping-ta/docs/IV-2-10_BD1_Report.pdf)
+- [Manual PDF](sleeping-ta/docs/IV-2-10_Manual.pdf)
+- [Шинэ шалгалтын гаралт](sleeping-ta/docs/test-results-review.txt)
+- [Release хийх заавар](sleeping-ta/docs/Release.md)
+
+Код: `sleeping-ta/src/`; тест: `sleeping-ta/tests/`.
+AI хэрэглээ: OpenAI ChatGPT-ийг код, тест, баримт бичиг боловсруулахад ашигласан.
+Эх сурвалж: OS_BD1_Guide.pdf болон Operating System Concepts-ийн
+Project 2 — The Sleeping Teaching Assistant.
