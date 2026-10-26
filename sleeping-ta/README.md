@@ -16,5 +16,3 @@ make test
 - [Manual PDF](docs/IV-2-10_Manual.pdf)
 
 Дэлгэцгүй орчинд `xvfb-run -a make test` ашиглавал UI тестүүд ажиллана.
-PDF-ийг шинэчлэхэд `python3 -m pip install -r tools/requirements-docs.txt`,
-дараа нь `python3 tools/build_docs.py` ажиллуулна. Үүнийг тусдаа virtual environment-д хийнэ.

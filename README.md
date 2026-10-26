@@ -59,11 +59,10 @@ GitHub Actions нь push/PR бүрд warnings-as-errors build болон Xvfb-т
 ## Баримт бичиг
 
 - [Хэрэглэгчийн болон operational заавар](sleeping-ta/docs/Manual.md)
-- [10 бүлэгтэй тайлан](sleeping-ta/docs/Report.md)
+- [Тайлан](sleeping-ta/docs/Report.md)
 - [Report PDF](sleeping-ta/docs/IV-2-10_BD1_Report.pdf)
 - [Manual PDF](sleeping-ta/docs/IV-2-10_Manual.pdf)
 - [Шинэ шалгалтын гаралт](sleeping-ta/docs/test-results-review.txt)
-- [Release хийх заавар](sleeping-ta/docs/Release.md)
 
 Код: `sleeping-ta/src/`; тест: `sleeping-ta/tests/`.
 AI хэрэглээ: OpenAI ChatGPT-ийг код, тест, баримт бичиг боловсруулахад ашигласан.
