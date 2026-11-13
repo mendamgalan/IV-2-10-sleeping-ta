@@ -5,14 +5,13 @@
 Энэ хавтас Makefile агуулна:
 
 ```bash
-make
-make run
-make test
+make          # libta.so
+make run      # цонх
+make test     # C 2 тест + Python 26 тест (дэлгэцгүй бол: xvfb-run -a make test)
+make tsan     # ThreadSanitizer-тэй stress тест
+make docs     # Report.md, Manual.md-ээс PDF
 ```
 
-- [Manual](docs/Manual.md)
-- [Тайлан](docs/Report.md)
-- [Тайлан PDF](docs/IV-2-10_BD1_Report.pdf)
-- [Manual PDF](docs/IV-2-10_Manual.pdf)
-
-Дэлгэцгүй орчинд `xvfb-run -a make test` ашиглавал UI тестүүд ажиллана.
+- [Manual](docs/Manual.md) · [PDF](docs/IV-2-10_Manual.pdf)
+- [Тайлан](docs/Report.md) · [PDF](docs/IV-2-10_BD1_Report.pdf)
+- [Тестийн гаралт](docs/test-results.txt)
