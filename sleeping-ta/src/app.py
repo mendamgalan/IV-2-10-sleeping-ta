@@ -125,8 +125,8 @@ class App:
             c.create_rectangle(x, y, x + 45, y + 40, fill=color, outline='')
             text(x + 5, y + 20, str(s['queue'][i] + 1) if occupied else '—', '#17243a' if occupied else '#8195b2')
         text(20, 195, 'ОЮУТНУУД / төлөв ба авсан тусламж', size=13)
-        labels = ['Код', 'Хүлээнэ', 'Тусламж', 'Дууссан']
-        colors = ['#77b7f7', '#eac16b', '#72e2b6', '#b8a0eb']
+        labels = ['Код', 'Хүлээнэ', 'Тусламж']
+        colors = ['#77b7f7', '#eac16b', '#72e2b6']
         for i, student in enumerate(s['students']):
             x = 20 + i % 10 * ((w - 40) / 10)
             y = 218 + i // 10 * 45

@@ -12,13 +12,21 @@
 #define RECENT_EVENTS 6
 #define EVENT_LENGTH 128
 
-enum StudentState { PROGRAMMING, WAITING, GETTING_HELP, FINISHED };
+enum StudentState { PROGRAMMING, WAITING, GETTING_HELP };
+enum Arrival { KEEP_PROGRAMMING, WAKE_TA, TAKE_CHAIR };
 
 /* Public functions have one caller (the UI/controller thread).
- * Workers access the shared model only while holding mu. */
+ * Workers access the shared model only while holding mu.
+ *
+ *   work       an arriving student wakes the sleeping TA
+ *   started    the TA tells that student that help has started
+ *   called[i]  student i sits on a chair until the TA calls it
+ *   done[i]    student i is helped until the TA finishes
+ *   returned   student i tells the TA that it is programming again
+ *   ticks[i], ta_tick, ack   model clock handshake with the controller */
 static pthread_mutex_t mu = PTHREAD_MUTEX_INITIALIZER;
-static sem_t work, ta_tick, ack, started;
-static sem_t ticks[MAX_STUDENTS], done[MAX_STUDENTS];
+static sem_t work, ta_tick, ack, started, returned;
+static sem_t ticks[MAX_STUDENTS], called[MAX_STUDENTS], done[MAX_STUDENTS];
 static pthread_t ta, students[MAX_STUDENTS];
 static int n, chairs, arrival_min, arrival_max, help_min, help_max;
 static int active, stopping, now, current = -1, queue[MAX_STUDENTS];
@@ -26,7 +34,8 @@ static int waiting_count, remaining, state[MAX_STUDENTS], due[MAX_STUDENTS];
 static int visits[MAX_STUDENTS], joined[MAX_STUDENTS];
 static int rejected, completed, arrivals, busy, wait_sum;
 static uint32_t rng, order_rng;
-static int common_sems, tick_sems, done_sems, ta_created, students_created;
+static int common_sems, tick_sems, called_sems, done_sems;
+static int ta_created, students_created;
 
 /* Full history lives in a temporary file, not a fixed-size memory buffer.
  * The UI reads only this small ring; exporting streams the complete file. */
@@ -81,10 +90,17 @@ static void begin_help(int id) {
     record_event("help_start", id);
 }
 
+static int is_stopping(void) {
+    pthread_mutex_lock(&mu);
+    int result = stopping;
+    pthread_mutex_unlock(&mu);
+    return result;
+}
+
 static void *teacher(void *unused) {
     (void)unused;
     for (;;) {
-        wait_sem(&work); /* No student: the TA really blocks here. */
+        wait_sem(&work); /* No student: the TA really sleeps here. */
         pthread_mutex_lock(&mu);
         if (stopping) {
             pthread_mutex_unlock(&mu);
@@ -103,15 +119,22 @@ static void *teacher(void *unused) {
             }
             busy++;
             remaining--;
+            int finished = -1;
             if (remaining == 0) {
-                int id = current;
+                finished = current;
                 completed++;
-                visits[id]++;
-                state[id] = FINISHED;
-                record_event("help_end", id);
-                sem_post(&done[id]);
+                visits[finished]++;
+                record_event("help_end", finished);
+            }
+            pthread_mutex_unlock(&mu);
+
+            int next = -1;
+            if (finished >= 0) {
+                sem_post(&done[finished]);
+                wait_sem(&returned);
+                pthread_mutex_lock(&mu);
                 if (waiting_count > 0) {
-                    int next = queue[0];
+                    next = queue[0];
                     waiting_count--;
                     memmove(queue, queue + 1,
                             (size_t)waiting_count * sizeof(queue[0]));
@@ -120,12 +143,14 @@ static void *teacher(void *unused) {
                     current = -1;
                     record_event("sleep", -1);
                 }
+                pthread_mutex_unlock(&mu);
+                if (next >= 0) {
+                    sem_post(&called[next]); /* call the first student in line */
+                }
             }
-            int idle = current < 0;
-            pthread_mutex_unlock(&mu);
             sem_post(&ack);
-            if (idle) {
-                break;
+            if (finished >= 0 && next < 0) {
+                break; /* queue empty: go back to sleep */
             }
         }
     }
@@ -135,31 +160,26 @@ static void *teacher(void *unused) {
 static void *student(void *arg) {
     int id = (int)(intptr_t)arg;
     for (;;) {
-        wait_sem(&ticks[id]);
+        wait_sem(&ticks[id]); /* programming: one tick of the model clock */
         pthread_mutex_lock(&mu);
         if (stopping) {
             pthread_mutex_unlock(&mu);
             break;
         }
-        int wake = 0;
-        if (state[id] == FINISHED && sem_trywait(&done[id]) == 0) {
-            state[id] = PROGRAMMING;
-            due[id] = now + random_between(arrival_min, arrival_max);
-            record_event("program", id);
-        }
-        if (state[id] == PROGRAMMING && now >= due[id]) {
+        int arrival = KEEP_PROGRAMMING;
+        if (now >= due[id]) {
             arrivals++;
             record_event("arrive", id);
             if (current < 0) {
                 current = id;
                 joined[id] = now;
-                wake = 1;
-                sem_post(&work);
+                arrival = WAKE_TA;
             } else if (waiting_count < chairs) {
                 queue[waiting_count++] = id;
                 state[id] = WAITING;
                 joined[id] = now;
                 record_event("queue", id);
+                arrival = TAKE_CHAIR;
             } else {
                 rejected++;
                 due[id] = now + random_between(arrival_min, arrival_max);
@@ -167,10 +187,31 @@ static void *student(void *arg) {
             }
         }
         pthread_mutex_unlock(&mu);
-        if (wake) {
+        if (arrival == WAKE_TA) {
+            sem_post(&work);
             wait_sem(&started);
         }
         sem_post(&ack);
+        if (arrival == KEEP_PROGRAMMING) {
+            continue;
+        }
+        if (arrival == TAKE_CHAIR) {
+            wait_sem(&called[id]);
+            if (is_stopping()) {
+                break;
+            }
+        }
+        wait_sem(&done[id]);
+        pthread_mutex_lock(&mu);
+        if (stopping) {
+            pthread_mutex_unlock(&mu);
+            break;
+        }
+        state[id] = PROGRAMMING;
+        due[id] = now + random_between(arrival_min, arrival_max);
+        record_event("program", id);
+        pthread_mutex_unlock(&mu);
+        sem_post(&returned);
     }
     return NULL;
 }
@@ -186,16 +227,21 @@ void sim_close(void) {
     }
     for (int i = 0; i < students_created; i++) {
         sem_post(&ticks[i]);
+        sem_post(&called[i]);
+        sem_post(&done[i]);
     }
     for (int i = 0; i < students_created; i++) {
         pthread_join(students[i], NULL);
     }
-    sem_t *common[] = {&work, &ta_tick, &ack, &started};
+    sem_t *common[] = {&work, &ta_tick, &ack, &started, &returned};
     for (int i = 0; i < common_sems; i++) {
         sem_destroy(common[i]);
     }
     for (int i = 0; i < tick_sems; i++) {
         sem_destroy(&ticks[i]);
+    }
+    for (int i = 0; i < called_sems; i++) {
+        sem_destroy(&called[i]);
     }
     for (int i = 0; i < done_sems; i++) {
         sem_destroy(&done[i]);
@@ -207,7 +253,7 @@ void sim_close(void) {
     free(history);
     history = NULL;
     history_capacity = 0;
-    active = common_sems = tick_sems = done_sems = 0;
+    active = common_sems = tick_sems = called_sems = done_sems = 0;
     ta_created = students_created = 0;
 }
 
@@ -239,8 +285,8 @@ int sim_init(int count, int seats, int amin, int amax,
     memset(state, 0, sizeof(state));
     memset(visits, 0, sizeof(visits));
 
-    sem_t *common[] = {&work, &ta_tick, &ack, &started};
-    for (int i = 0; i < 4; i++) {
+    sem_t *common[] = {&work, &ta_tick, &ack, &started, &returned};
+    for (int i = 0; i < 5; i++) {
         if (sem_init(common[i], 0, 0) != 0) {
             goto resource_error;
         }
@@ -251,6 +297,10 @@ int sim_init(int count, int seats, int amin, int amax,
             goto resource_error;
         }
         tick_sems++;
+        if (sem_init(&called[i], 0, 0) != 0) {
+            goto resource_error;
+        }
+        called_sems++;
         if (sem_init(&done[i], 0, 0) != 0) {
             goto resource_error;
         }
@@ -290,19 +340,25 @@ void sim_step(void) {
         sem_post(&ta_tick);
         wait_sem(&ack);
     }
+    /* Only programming students follow the clock. The others are blocked on
+     * called[i] or done[i] until the TA signals them. */
+    int order[MAX_STUDENTS], count = 0;
+    pthread_mutex_lock(&mu);
+    for (int i = 0; i < n; i++) {
+        if (state[i] == PROGRAMMING && current != i) {
+            order[count++] = i;
+        }
+    }
+    pthread_mutex_unlock(&mu);
     /* Real threads reach the lock in no fixed order. A seeded shuffle keeps
      * runs reproducible without serving the same students every tick. */
-    int order[MAX_STUDENTS];
-    for (int i = 0; i < n; i++) {
-        order[i] = i;
-    }
-    for (int i = n - 1; i > 0; i--) {
+    for (int i = count - 1; i > 0; i--) {
         int j = random_index(i + 1);
         int swap = order[i];
         order[i] = order[j];
         order[j] = swap;
     }
-    for (int k = 0; k < n; k++) {
+    for (int k = 0; k < count; k++) {
         sem_post(&ticks[order[k]]);
         wait_sem(&ack);
     }
