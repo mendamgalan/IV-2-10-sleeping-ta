@@ -31,7 +31,11 @@ test: all build/resource_failure build/stress
 tsan: build/stress_tsan
 	TSAN_OPTIONS=halt_on_error=1 setarch "$$(uname -m)" -R ./build/stress_tsan 1000
 
+# Report and Manual PDFs from the Markdown sources.
+docs:
+	$(PYTHON) docs/build_docs.py
+
 clean:
 	rm -f libta.so build/resource_failure build/stress build/stress_tsan
 
-.PHONY: all run test tsan clean
+.PHONY: all run test tsan docs clean
