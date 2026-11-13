@@ -13,5 +13,5 @@ make docs     # Report.md, Manual.md-ээс PDF
 ```
 
 - [Manual](docs/Manual.md) · [PDF](docs/IV-2-10_Manual.pdf)
-- [Тайлан](docs/Report.md) · [PDF](docs/IV-2-10_BD1_Report.pdf)
+- [Эцсийн тайлан (БД2)](docs/Report.md) · [PDF](docs/IV-2-10_BD2_Report.pdf) · [БД1-ийн тайлан](docs/IV-2-10_BD1_Report.pdf)
 - [Тестийн гаралт](docs/test-results.txt)

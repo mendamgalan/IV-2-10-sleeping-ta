@@ -1,6 +1,6 @@
 # The Sleeping Teaching Assistant IV-2-10
 
-F.CSM302 Үйлдлийн систем · Бие даалт 1 · хувилбар 1.1
+F.CSM302 Үйлдлийн систем · Бие даалт 1–2 · хувилбар 1.1
 
 C / POSIX Pthreads хөдөлгүүр, Python Tkinter удирдах цонхтой.
 TA болон оюутан бүр тусдаа OS thread. Сул TA semaphore дээр унтаж, ирсэн оюутан сэрээнэ;
@@ -50,12 +50,13 @@ GitHub Actions push/PR бүрд `-Werror` build, Xvfb-тэй тест, ThreadSan
 - **Чөлөөт горим:** оюутнууд нэг tick дотор зэрэг ажиллаж TA, сандал, mutex-ийн төлөө өрсөлдөнө.
 
 Хоёр горимд сандал дээрх оюутан `called[i]`, тусламж авч буй оюутан `done[i]` semaphore дээр
-блоклогдож, сул TA `work` дээр унтана. Дэлгэрэнгүй: Report 4–5, 9-р хэсэг.
+блоклогдож, сул TA `work` дээр унтана. Дэлгэрэнгүй: эцсийн тайлангийн 4–5, 10-р хэсэг.
 
 ## Баримт бичиг
 
 - [Хэрэглэгчийн болон operational заавар](sleeping-ta/docs/Manual.md) · [PDF](sleeping-ta/docs/IV-2-10_Manual.pdf)
-- [Тайлан](sleeping-ta/docs/Report.md) · [PDF](sleeping-ta/docs/IV-2-10_BD1_Report.pdf)
+- Эцсийн тайлан (БД2, v1.1): [Report.md](sleeping-ta/docs/Report.md) · [PDF](sleeping-ta/docs/IV-2-10_BD2_Report.pdf)
+- БД1-ийн тайлан (v1.0, илгээсэн хэвээр): [PDF](sleeping-ta/docs/IV-2-10_BD1_Report.pdf)
 - Туршилтыг давтах: `python3 sleeping-ta/docs/experiments.py`
 - PDF-ийг Markdown-оос дахин үүсгэх: `make -C sleeping-ta docs` (`python3-markdown`, LibreOffice)
 
