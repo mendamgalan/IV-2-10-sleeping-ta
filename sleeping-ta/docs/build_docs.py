@@ -1,4 +1,4 @@
-"""Build IV-2-10_BD1_Report.pdf and IV-2-10_Manual.pdf from the Markdown sources.
+"""Build IV-2-10_BD2_Report.pdf and IV-2-10_Manual.pdf from the Markdown sources.
 
 Usage (from sleeping-ta/):  make docs
 Needs python3-markdown and LibreOffice Writer (soffice). The Markdown files are
@@ -19,6 +19,8 @@ except ImportError:
 
 DOCS = Path(__file__).resolve().parent
 TEXT_WIDTH = 640  # px available between the page margins
+# Fixed column widths (px) for tables whose first header cell matches.
+COLUMN_WIDTHS = {'Гишүүн': (190, 210, 240)}
 
 STYLE = """
 @page { size: 21cm 29.7cm; margin: 2cm 2cm 2cm 2.5cm; }
@@ -43,7 +45,7 @@ COVER = """
 <table border="0" cellspacing="0" cellpadding="3" align="center" style="margin-top:2.4cm">
 <tr><td width="170"><font face="Times New Roman" style="font-size:12pt">Шалгасан багш:</font></td><td width="260"><font face="Times New Roman" style="font-size:12pt">Г. Ганбат</font></td></tr>
 <tr><td><font face="Times New Roman" style="font-size:12pt">Багийн дугаар:</font></td><td><font face="Times New Roman" style="font-size:12pt">IV-2-10</font></td></tr>
-<tr><td><font face="Times New Roman" style="font-size:12pt">Гүйцэтгэсэн оюутан:</font></td><td><font face="Times New Roman" style="font-size:12pt">Ж. Мэнд-Амгалан /B242270008/<br>Г. Оргилсайхан /B222270044/<br>Б. Түмэнбаяр /B242270114/<br>Б. Манлайбаатар /B241940052/</font></td></tr>
+<tr><td><font face="Times New Roman" style="font-size:12pt">Гүйцэтгэсэн оюутан:</font></td><td><font face="Times New Roman" style="font-size:12pt">Ж. Мэнд-Амгалан /B242270008/<br>Г. Оргилсайхан /B222270044/</font></td></tr>
 </table>
 <p align="center" style="margin-top:3.2cm"><font face="Times New Roman" style="font-size:12pt">Улаанбаатар хот<br>2026 он</font></p>
 """
@@ -77,6 +79,10 @@ def to_html(source, cover=None):
     body = re.sub(r'<p><em>(Зураг \d+\..*?)</em></p>', r'<p class="cap"><i>\1</i></p>', body, flags=re.S)
     body = body.replace('<table>', '<table border="1" cellspacing="0" cellpadding="3" width="100%">')
     body = body.replace('<thead>\n<tr>', '<thead>\n<tr bgcolor="#dcdcdc">')
+    for first, widths in COLUMN_WIDTHS.items():
+        cols = ''.join(f'<col width="{w}">' for w in widths)
+        body = body.replace(f'width="100%">\n<thead>\n<tr bgcolor="#dcdcdc">\n<th>{first}</th>',
+                            f'width="100%">{cols}\n<thead>\n<tr bgcolor="#dcdcdc">\n<th>{first}</th>')
     parts = [f'<!DOCTYPE html><html lang="mn"><head><meta charset="utf-8"><title>{source.stem}</title>'
              f'<style>{STYLE}</style></head><body>']
     if cover:
@@ -103,6 +109,7 @@ def build(source, target, cover=None):
 if __name__ == '__main__':
     if not shutil.which('soffice'):
         sys.exit('LibreOffice хэрэгтэй: sudo apt install libreoffice-writer')
-    build(DOCS / 'Report.md', DOCS / 'IV-2-10_BD1_Report.pdf',
-          cover={'title': 'The Sleeping Teaching Assistant', 'subtitle': 'Бие даалт №1 — тайлан'})
+    # IV-2-10_BD1_Report.pdf is the BD1 submission (v1.0) and is kept as it was.
+    build(DOCS / 'Report.md', DOCS / 'IV-2-10_BD2_Report.pdf',
+          cover={'title': 'The Sleeping Teaching Assistant', 'subtitle': 'Бие даалт №2 — эцсийн тайлан'})
     build(DOCS / 'Manual.md', DOCS / 'IV-2-10_Manual.pdf')
