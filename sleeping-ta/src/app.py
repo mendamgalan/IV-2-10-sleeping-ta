@@ -86,7 +86,10 @@ class App:
         for label, cmd in [('▶ Ажиллуулах', self.play), ('Ⅱ Түр зогсоох', self.pause), ('→ Алхам +0.1с', self.step),
                            ('↺ Reset', self.reset), ('CSV хадгалах', self.export)]:
             ttk.Button(self.bar, text=label, command=cmd).pack(side='left', padx=(0, 8))
-        ttk.Label(self.bar, text='Хурд').pack(side='left', padx=(8, 4))
+        self.free = tk.BooleanVar(value=False)
+        self.free.trace_add('write', lambda *args: self.update_pending())
+        ttk.Checkbutton(self.bar, text='Чөлөөт горим', variable=self.free).pack(side='left', padx=(4, 0))
+        ttk.Label(self.bar, text='Хурд').pack(side='left', padx=(12, 4))
         self.speed = tk.StringVar(value='×1')
         self.speed.trace_add('write', lambda *args: self.restart_clock())
         ttk.Combobox(self.bar, textvariable=self.speed, values=list(SPEEDS), width=4,
@@ -135,6 +138,7 @@ class App:
         if values['hmin'] > values['hmax']:
             raise FieldError('hmin', 'Тусламж: min нь max-аас их байж болохгүй.')
         values['seed'] = whole('seed', 0, 4294967295)
+        values['free'] = bool(self.free.get())
         return values
 
     def reset(self):
@@ -150,6 +154,7 @@ class App:
         self.running = False
         self.config = values
         self.applied = {k: v.get().strip() for k, v in self.fields.items()}
+        self.applied_free = values['free']
         self.update_pending()
         self.draw()
 
@@ -169,7 +174,8 @@ class App:
         for key, (label, group) in self.group_labels.items():
             keys = [k for k, (other, g) in self.group_labels.items() if g == group]
             label.configure(text=group + (' *' if changed & set(keys) else ''))
-        self.pending.configure(text='* Reset дарж хэрэглэнэ' if changed else '')
+        mode_changed = bool(self.free.get()) != self.applied_free
+        self.pending.configure(text='* Reset дарж хэрэглэнэ' if changed or mode_changed else '')
 
     def play(self):
         if not self.model.snapshot()['active']:
@@ -227,6 +233,7 @@ class App:
 
         c.create_rectangle(16, 12, 286, 132, fill='#22334d', outline='#41536b')
         self.text(32, 34, 'TA / ӨРӨӨ', size=13)
+        self.text(270, 34, 'чөлөөт' if s['free'] else 'seed', MUTED, 9, anchor='e')
         if current >= 0:
             self.text(32, 68, f'S{current + 1}-д тусалж байна', STATE_COLORS[2])
             self.text(32, 102, f"Үлдсэн: {s['remaining'] / 10:.1f} с", size=11)

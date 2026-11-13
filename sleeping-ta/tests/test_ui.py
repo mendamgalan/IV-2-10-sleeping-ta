@@ -118,3 +118,13 @@ class UiTests(unittest.TestCase):
             now[0] += 5.0
             self.app.loop()
             self.assertEqual(self.app.model.snapshot()['tick'], 70)
+
+    def test_free_mode_switch(self):
+        self.app.free.set(True)
+        self.assertIn('Reset', self.app.pending.cget('text'))
+        self.app.reset()
+        self.assertTrue(self.app.model.snapshot()['free'])
+        self.assertEqual(self.app.pending.cget('text'), '')
+        for _ in range(50):
+            self.app.step()
+        self.assertEqual(self.app.model.snapshot()['tick'], 50)
