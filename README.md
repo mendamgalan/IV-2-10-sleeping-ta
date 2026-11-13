@@ -1,10 +1,11 @@
 # The Sleeping Teaching Assistant IV-2-10
 
-F.CSM302 Үйлдлийн систем · Бие даалт 1
+F.CSM302 Үйлдлийн систем · Бие даалт 1 · хувилбар 1.1
 
 C / POSIX Pthreads хөдөлгүүр, Python Tkinter удирдах цонхтой.
-Оюутан бүр болон TA тусдаа OS thread. Сандал, ирэх завсар, туслах хугацааг
-тохируулж, FIFO дараалал ба TA-ийн төлөвийг алхамчилж харуулна.
+TA болон оюутан бүр тусдаа OS thread. Сул TA semaphore дээр унтаж, ирсэн оюутан сэрээнэ;
+завгүй үед оюутан сандал дээр FIFO дарааллаар хүлээж, дүүрэн бол дараа ирнэ. Сандал,
+программчлах ба тусламжийн хугацаа, seed-ийг тохируулж, алхамчилж эсвэл бодит цагаар харна.
 
 ## Debian / Ubuntu дээр эхлүүлэх
 
@@ -17,54 +18,51 @@ make
 make run
 ```
 
-Repository-г өмнө татсан бол Makefile байгаа `sleeping-ta` хавтас руу орно.
-Python-ийн нэмэлт pip сан ажиллуулахад хэрэггүй. Linux desktop эсвэл
-Windows-ийн WSL2 + WSLg шаардлагатай. Native Windows/macOS дэмжихгүй.
+Repository-ийн үндсэн хавтсаас бол `make -C sleeping-ta run`. Python-ийн нэмэлт pip сан
+хэрэггүй. Linux desktop шаардлагатай (WSL2 + WSLg туршаагүй). Native Windows/macOS дэмжихгүй.
 
 ## Шалгах
 
-Repository-ийн үндсэн хавтсаас:
-
 ```bash
-make -C sleeping-ta test
+make -C sleeping-ta test            # C 2 тест + Python 26 тест
+xvfb-run -a make -C sleeping-ta test  # дэлгэцгүй серверт (sudo apt install xvfb)
+make -C sleeping-ta tsan            # ThreadSanitizer-тэй stress тест
 ```
 
-Үүнд 14 хөдөлгүүр/интерфейсийн тест, 4 UI тест, C нөөцийн алдааны 3 нөхцөл орно.
-Дэлгэцгүй үед UI-ийн 4 тест SKIP болно. Бүгдийг ажиллуулахад:
+- `resource_failure` — thread/semaphore үүсгэх алдааны 3 нөхцөл.
+- `stress` — чөлөөт горимд 15 000 tick, tick бүрт дүрэм (сандлын хязгаар, FIFO, баланс).
+- Python: хөдөлгүүр 8, regression 9, UI 9 тест. Дэлгэцгүй үед UI-ийн 9 тест SKIP.
 
-```bash
-sudo apt install xvfb
-xvfb-run -a make -C sleeping-ta test
-```
+GitHub Actions push/PR бүрд `-Werror` build, Xvfb-тэй тест, ThreadSanitizer ажиллуулна.
+Сүүлийн гаралт: [docs/test-results.txt](sleeping-ta/docs/test-results.txt).
 
-GitHub Actions нь push/PR бүрд warnings-as-errors build болон Xvfb-тэй тест хийнэ.
+## Удирдлага
 
-## Удирдлага ба журнал
+- Ажиллуулах / Түр зогсоох / Алхам +0.1с / Reset, хурд ×1 / ×5 / ×20.
+- 1 tick = загварын 100 мс; автомат горим бодит цагтай ижил хурдтай.
+- Талбарыг өөрчилсний дараа Reset дарна (`*` тэмдэг гарна); буруу утгад талбарын нэр, хязгаар гарна.
+- CSV хадгалах нь бүх түүхийг хуулна; Reset эсвэл хаахаас өмнө экспортлоно.
 
-- Run / Pause / Step / Reset нь C хөдөлгүүрийн цагийг удирдана.
-- 1 tick = загварын 100 мс; ирэх завсар нь оюутан тус бүрийн программчлах хугацаа.
-- UI зөвхөн сүүлийн 6 үйл явдлыг харуулна. Бүтэн түүх түр файлд хадгалагдана.
-- CSV экспорт нь бүх түүхийг хуулна; амжилтгүй бол өмнөх файлыг солихгүй.
-- Reset эсвэл хаахаас **өмнө** хэрэгтэй CSV-ээ экспортлоно. Түр түүх устдаг.
-- Диск дүүрвэл UI алдааг харуулж, дутуу CSV-г бүтэн мэт экспортлохгүй.
+## Thread-ийн загвар
 
-## Thread-ийн гүйцэтгэлийн загвар
+- **Seed горим (өгөгдмөл):** нэг tick-д TA, дараа нь оюутнууд seed-ээр холисон дарааллаар
+  ээлжлэн ажиллана; ижил seed яг ижил үр дүн өгнө.
+- **Чөлөөт горим:** оюутнууд нэг tick дотор зэрэг ажиллаж TA, сандал, mutex-ийн төлөө өрсөлдөнө.
 
-Энэ нь **алхамчилсан загвар**. Worker-үүд бодит Pthreads боловч нэг tick дотор
-үйлдлүүдийг ack semaphore-аар дараалан гүйцэтгүүлдэг. Pause үед загварын цаг
-зогсоно; Step бүрэн дууссаны дараа snapshot уншина. Ижил seed, тохиргоо ижил
-үйл явдал өгнө. Энэ хувилбар чөлөөт OS scheduling-ийн race/stress benchmark биш,
-тусдаа real-time горимгүй. TA сул үед `work` semaphore дээр бодитоор блоклогдоно.
+Хоёр горимд сандал дээрх оюутан `called[i]`, тусламж авч буй оюутан `done[i]` semaphore дээр
+блоклогдож, сул TA `work` дээр унтана. Дэлгэрэнгүй: Report 4–5, 9-р хэсэг.
 
 ## Баримт бичиг
 
-- [Хэрэглэгчийн болон operational заавар](sleeping-ta/docs/Manual.md)
-- [Тайлан](sleeping-ta/docs/Report.md)
-- [Report PDF](sleeping-ta/docs/IV-2-10_BD1_Report.pdf)
-- [Manual PDF](sleeping-ta/docs/IV-2-10_Manual.pdf)
-- [Шинэ шалгалтын гаралт](sleeping-ta/docs/test-results-review.txt)
+- [Хэрэглэгчийн болон operational заавар](sleeping-ta/docs/Manual.md) · [PDF](sleeping-ta/docs/IV-2-10_Manual.pdf)
+- [Тайлан](sleeping-ta/docs/Report.md) · [PDF](sleeping-ta/docs/IV-2-10_BD1_Report.pdf)
+- Туршилтыг давтах: `python3 sleeping-ta/docs/experiments.py`
+- PDF-ийг Markdown-оос дахин үүсгэх: `make -C sleeping-ta docs` (`python3-markdown`, LibreOffice)
+
+Хувилбар: `v1.0` — БД1 постын хувилбар, `v1.1` — дотоод шүүмжийн засвартай хувилбар.
 
 Код: `sleeping-ta/src/`; тест: `sleeping-ta/tests/`.
-AI хэрэглээ: OpenAI ChatGPT-ийг код, тест, баримт бичиг боловсруулахад ашигласан.
+AI хэрэглээ: OpenAI ChatGPT (v1.0-ийн код, тест, баримт), Claude (v1.1-ийн шүүмж, засвар,
+баримт). Үр дүнг баг ажиллуулж шалгасан.
 Эх сурвалж: OS_BD1_Guide.pdf болон Operating System Concepts-ийн
 Project 2 — The Sleeping Teaching Assistant.

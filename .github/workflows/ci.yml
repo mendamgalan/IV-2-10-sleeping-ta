@@ -16,5 +16,7 @@ jobs:
         run: make -C sleeping-ta
       - name: Engine and UI tests
         run: xvfb-run -a make -C sleeping-ta test
+      - name: ThreadSanitizer stress test
+        run: make -C sleeping-ta tsan
       - name: Python syntax
         run: python3 -m compileall -q sleeping-ta/src sleeping-ta/tests

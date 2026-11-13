@@ -61,3 +61,70 @@ class UiTests(unittest.TestCase):
         with patch.object(self.app.model, 'snapshot', return_value=snapshot):
             self.app.draw()
         self.assertIn('алдаа', self.app.warning.cget('text'))
+
+    def test_layout_fits_default_and_minimum_window(self):
+        self.root.deiconify()
+        self.app.fields['n'].set('40')
+        self.app.fields['chairs'].set('20')
+        self.app.reset()
+        for size in ('1120x800', '980x740'):
+            with self.subTest(size=size):
+                self.root.geometry(size)
+                self.root.update()
+                self.app.draw()
+                self.root.update()
+                main = self.app.hint.master
+                for widget in (self.app.hint, self.app.stats, self.app.log, self.app.bar):
+                    self.assertTrue(widget.winfo_ismapped())
+                    self.assertLessEqual(widget.winfo_y() + widget.winfo_height(), main.winfo_height())
+                self.assertGreaterEqual(self.app.log.winfo_height(), self.app.log.winfo_reqheight())
+                self.assertLessEqual(self.app.stats.winfo_reqwidth(), main.winfo_width())
+                bottom = self.app.canvas.bbox('all')[3]
+                self.assertLessEqual(bottom, self.app.canvas.winfo_height())
+
+    def test_error_names_the_field_and_range(self):
+        cases = [('n', '41', 'Оюутан: 1–40'), ('chairs', 'abc', 'Сандал: 0–20'),
+                 ('amin', '0.05', 'Программчлах min'), ('hmin', '9', 'Тусламж: min'),
+                 ('seed', '-1', 'Seed: 0–4294967295')]
+        for field, value, expected in cases:
+            with self.subTest(field=field):
+                old = self.app.fields[field].get()
+                self.app.fields[field].set(value)
+                with patch('app.messagebox.showerror') as error:
+                    self.app.reset()
+                self.assertIn(expected, error.call_args[0][1])
+                self.app.fields[field].set(old)
+
+    def test_unapplied_change_is_marked(self):
+        self.assertEqual(self.app.pending.cget('text'), '')
+        self.app.fields['chairs'].set('5')
+        self.assertIn('Reset', self.app.pending.cget('text'))
+        self.app.reset()
+        self.assertEqual(self.app.pending.cget('text'), '')
+        self.assertEqual(self.app.model.snapshot()['queue'], [])
+
+    def test_auto_mode_follows_the_clock(self):
+        now = [100.0]
+        with patch('app.time.monotonic', side_effect=lambda: now[0]):
+            self.app.play()
+            now[0] += 2.0
+            self.app.loop()
+            self.assertEqual(self.app.model.snapshot()['tick'], 20)
+            self.app.speed.set('×5')
+            now[0] += 1.0
+            self.app.loop()
+            self.assertEqual(self.app.model.snapshot()['tick'], 70)
+            self.app.pause()
+            now[0] += 5.0
+            self.app.loop()
+            self.assertEqual(self.app.model.snapshot()['tick'], 70)
+
+    def test_free_mode_switch(self):
+        self.app.free.set(True)
+        self.assertIn('Reset', self.app.pending.cget('text'))
+        self.app.reset()
+        self.assertTrue(self.app.model.snapshot()['free'])
+        self.assertEqual(self.app.pending.cget('text'), '')
+        for _ in range(50):
+            self.app.step()
+        self.assertEqual(self.app.model.snapshot()['tick'], 50)

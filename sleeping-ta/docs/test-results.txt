@@ -1,4 +1,21 @@
-make: Entering directory '/workspace/scratch/66b6150d188a/sleeping-ta'
+IV-2-10 Sleeping TA — test results
+Date: 2026-11-13
+Commit: 66813af (orgil-sandbox)
+OS: Ubuntu 26.04.1 LTS, Linux 7.0.0-42-generic x86_64
+Compiler: gcc (Ubuntu 15.2.0-16ubuntu1) 15.2.0
+Python: 3.14.4, Tk 8.6.17
+
+$ make
+gcc -std=c11 -O2 -Wall -Wextra -Wpedantic -Werror -pthread -fPIC -shared src/engine.c -o libta.so
+
+$ xvfb-run -a make test
+mkdir -p build
+gcc -std=c11 -O2 -Wall -Wextra -Wpedantic -Werror -pthread tests/resource_failure.c -o build/resource_failure
+mkdir -p build
+gcc -std=c11 -O2 -Wall -Wextra -Wpedantic -Werror -pthread tests/stress.c -o build/stress
+./build/resource_failure
+./build/stress
+stress: 15000 free-running ticks, invariants held
 python3 -m unittest discover -s tests -v
 test_baseline_fifo (test_engine.EngineTests.test_baseline_fifo) ... ok
 test_invalid (test_engine.EngineTests.test_invalid) ... ok
@@ -8,13 +25,39 @@ test_service_duration (test_engine.EngineTests.test_service_duration) ... ok
 test_single_student_no_rejection (test_engine.EngineTests.test_single_student_no_rejection) ... ok
 test_sleep_until_arrival (test_engine.EngineTests.test_sleep_until_arrival) ... ok
 test_zero_chairs (test_engine.EngineTests.test_zero_chairs) ... ok
+test_close_is_repeatable_idle_and_busy (test_regressions.RegressionTests.test_close_is_repeatable_idle_and_busy) ... ok
+test_export_keeps_normal_file_mode (test_regressions.RegressionTests.test_export_keeps_normal_file_mode) ... ok
+test_failed_export_preserves_existing_file (test_regressions.RegressionTests.test_failed_export_preserves_existing_file) ... ok
+test_free_mode_keeps_invariants (test_regressions.RegressionTests.test_free_mode_keeps_invariants) ... ok
+test_help_is_spread_across_students (test_regressions.RegressionTests.test_help_is_spread_across_students) ... ok
+test_long_run_preserves_full_journal_and_live_tail (test_regressions.RegressionTests.test_long_run_preserves_full_journal_and_live_tail) ... ok
+test_maximum_valid_seed (test_regressions.RegressionTests.test_maximum_valid_seed) ... ok
+test_python_inputs_rejected_before_ctypes_conversion (test_regressions.RegressionTests.test_python_inputs_rejected_before_ctypes_conversion) ... ok
+test_reset_discards_old_history (test_regressions.RegressionTests.test_reset_discards_old_history) ... ok
+test_auto_mode_follows_the_clock (test_ui.UiTests.test_auto_mode_follows_the_clock) ... ok
+test_draw_uses_recent_log_not_entire_history (test_ui.UiTests.test_draw_uses_recent_log_not_entire_history) ... ok
+test_error_names_the_field_and_range (test_ui.UiTests.test_error_names_the_field_and_range) ... ok
+test_free_mode_switch (test_ui.UiTests.test_free_mode_switch) ... ok
+test_invalid_inputs_preserve_current_run (test_ui.UiTests.test_invalid_inputs_preserve_current_run) ... ok
+test_journal_failure_visible (test_ui.UiTests.test_journal_failure_visible) ... ok
+test_layout_fits_default_and_minimum_window (test_ui.UiTests.test_layout_fits_default_and_minimum_window) ... ok
+test_pause_step_and_reset (test_ui.UiTests.test_pause_step_and_reset) ... ok
+test_unapplied_change_is_marked (test_ui.UiTests.test_unapplied_change_is_marked) ... ok
 
 ----------------------------------------------------------------------
-Ran 8 tests in 1.284s
+Ran 26 tests in 3.148s
 
 OK
-make: Leaving directory '/workspace/scratch/66b6150d188a/sleeping-ta'
+exit=0
 
-Linux-6.18.44-x86_64-with-glibc2.39
-3.12.14
-gcc (Ubuntu 13.3.0-6ubuntu2~24.04) 13.3.0
+$ make tsan
+mkdir -p build
+gcc -std=c11 -O1 -g -pthread -fsanitize=thread tests/stress.c -o build/stress_tsan
+TSAN_OPTIONS=halt_on_error=1 setarch "$(uname -m)" -R ./build/stress_tsan 1000
+stress: 5000 free-running ticks, invariants held
+exit=0
+
+$ DISPLAY= make test   (no display: UI tests are skipped)
+Ran 26 tests in 1.145s
+
+OK (skipped=9)
