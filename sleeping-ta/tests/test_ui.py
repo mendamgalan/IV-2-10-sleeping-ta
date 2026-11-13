@@ -102,3 +102,19 @@ class UiTests(unittest.TestCase):
         self.app.reset()
         self.assertEqual(self.app.pending.cget('text'), '')
         self.assertEqual(self.app.model.snapshot()['queue'], [])
+
+    def test_auto_mode_follows_the_clock(self):
+        now = [100.0]
+        with patch('app.time.monotonic', side_effect=lambda: now[0]):
+            self.app.play()
+            now[0] += 2.0
+            self.app.loop()
+            self.assertEqual(self.app.model.snapshot()['tick'], 20)
+            self.app.speed.set('×5')
+            now[0] += 1.0
+            self.app.loop()
+            self.assertEqual(self.app.model.snapshot()['tick'], 70)
+            self.app.pause()
+            now[0] += 5.0
+            self.app.loop()
+            self.assertEqual(self.app.model.snapshot()['tick'], 70)

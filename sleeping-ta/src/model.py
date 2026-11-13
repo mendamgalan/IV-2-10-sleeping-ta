@@ -58,6 +58,12 @@ class Model:
         self.lib.sim_step()
         return self.snapshot()
 
+    def advance(self, ticks):
+        """Run several ticks and read one snapshot (used by auto mode)."""
+        for _ in range(ticks):
+            self.lib.sim_step()
+        return self.snapshot()
+
     def snapshot(self):
         return json.loads(self.lib.sim_snapshot())
 

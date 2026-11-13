@@ -1,4 +1,5 @@
 # UI input validation includes the checks contributed by Оргилсайхан.
+import time
 import tkinter as tk
 import tkinter.font as tkfont
 from tkinter import ttk, messagebox, filedialog
@@ -21,6 +22,9 @@ FIELDS = [
 HINT = ('1 алхам = загварын 100 мс. Программчлах = тусламжийн дараа дахин ирэх хүртэлх хугацаа. '
         'Талбарыг өөрчилсний дараа Reset дарна.')
 COLS, ROW_H, STUDENTS_Y = 10, 44, 172
+SPEEDS = {'×1': 1, '×5': 5, '×20': 20}
+FRAME_MS = 20      # how often auto mode checks the clock
+MAX_CATCH_UP = 200  # ticks per frame before the clock is re-synced
 NAMES = {'n': 'Оюутан', 'chairs': 'Сандал', 'amin': 'Программчлах min', 'amax': 'Программчлах max',
          'hmin': 'Тусламж min', 'hmax': 'Тусламж max', 'seed': 'Seed'}
 
@@ -82,6 +86,11 @@ class App:
         for label, cmd in [('▶ Ажиллуулах', self.play), ('Ⅱ Түр зогсоох', self.pause), ('→ Алхам +0.1с', self.step),
                            ('↺ Reset', self.reset), ('CSV хадгалах', self.export)]:
             ttk.Button(self.bar, text=label, command=cmd).pack(side='left', padx=(0, 8))
+        ttk.Label(self.bar, text='Хурд').pack(side='left', padx=(8, 4))
+        self.speed = tk.StringVar(value='×1')
+        self.speed.trace_add('write', lambda *args: self.restart_clock())
+        ttk.Combobox(self.bar, textvariable=self.speed, values=list(SPEEDS), width=4,
+                     state='readonly').pack(side='left')
         self.pending = ttk.Label(self.bar, text='', foreground='#ffb454')
         self.pending.pack(side='right')
         self.hint = ttk.Label(main, text=HINT, foreground=MUTED, font=('DejaVu Sans', 9))
@@ -167,6 +176,10 @@ class App:
             messagebox.showerror('Ажиллуулах алдаа', 'Эхлээд reset хийж хөдөлгүүрийг эхлүүлнэ.')
             return
         self.running = True
+        self.restart_clock()
+
+    def restart_clock(self):
+        self.clock = (time.monotonic(), self.model.snapshot()['tick'])
 
     def pause(self):
         self.running = False
@@ -177,10 +190,20 @@ class App:
         self.draw()
 
     def loop(self):
+        """Keep model time equal to wall time × speed, whatever draw() costs."""
         if self.running:
-            self.model.step()
-            self.draw()
-        self.root.after(100, self.loop)
+            start, first_tick = self.clock
+            speed = SPEEDS.get(self.speed.get(), 1)
+            target = first_tick + int((time.monotonic() - start) * 10 * speed)
+            tick = self.model.snapshot()['tick']
+            missing = target - tick
+            if missing > MAX_CATCH_UP:  # window was blocked: do not freeze the UI
+                missing = MAX_CATCH_UP
+                self.clock = (time.monotonic(), tick + missing)
+            if missing > 0:
+                self.model.advance(missing)
+                self.draw()
+        self.root.after(FRAME_MS, self.loop)
 
     def text(self, x, y, t, color='#e6edf7', size=12, anchor='w', bold=False):
         font = ('DejaVu Sans', size, 'bold') if bold else ('DejaVu Sans', size)
