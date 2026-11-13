@@ -21,6 +21,14 @@ FIELDS = [
 HINT = ('1 алхам = загварын 100 мс. Программчлах = тусламжийн дараа дахин ирэх хүртэлх хугацаа. '
         'Талбарыг өөрчилсний дараа Reset дарна.')
 COLS, ROW_H, STUDENTS_Y = 10, 44, 172
+NAMES = {'n': 'Оюутан', 'chairs': 'Сандал', 'amin': 'Программчлах min', 'amax': 'Программчлах max',
+         'hmin': 'Тусламж min', 'hmax': 'Тусламж max', 'seed': 'Seed'}
+
+
+class FieldError(ValueError):
+    def __init__(self, key, message):
+        super().__init__(message)
+        self.key = key
 
 
 class App:
@@ -63,6 +71,7 @@ class App:
             if sub:
                 ttk.Label(row, text=sub, foreground=MUTED).pack(side='left', padx=(0, 3))
             var = tk.StringVar(value=default)
+            var.trace_add('write', lambda *args: self.update_pending())
             entry = ttk.Entry(row, textvariable=var, width=7)
             entry.pack(side='left', padx=(0, 8))
             self.fields[key], self.entries[key] = var, entry
@@ -73,6 +82,8 @@ class App:
         for label, cmd in [('▶ Ажиллуулах', self.play), ('Ⅱ Түр зогсоох', self.pause), ('→ Алхам +0.1с', self.step),
                            ('↺ Reset', self.reset), ('CSV хадгалах', self.export)]:
             ttk.Button(self.bar, text=label, command=cmd).pack(side='left', padx=(0, 8))
+        self.pending = ttk.Label(self.bar, text='', foreground='#ffb454')
+        self.pending.pack(side='right')
         self.hint = ttk.Label(main, text=HINT, foreground=MUTED, font=('DejaVu Sans', 9))
         self.hint.pack(anchor='w')
         self.stats = ttk.Label(main, text='')
@@ -89,32 +100,67 @@ class App:
         root.protocol('WM_DELETE_WINDOW', self.close)
         root.after(100, self.loop)
 
+    def read_config(self):
+        text = {k: v.get().strip() for k, v in self.fields.items()}
+
+        def whole(key, low, high):
+            try:
+                value = int(text[key])
+            except ValueError:
+                value = None
+            if value is None or not low <= value <= high:
+                raise FieldError(key, f'{NAMES[key]}: {low}–{high} хүртэлх бүхэл тоо оруулна.')
+            return value
+
+        values = {'n': whole('n', 1, 40), 'chairs': whole('chairs', 0, 20)}
+        for key in ('amin', 'amax', 'hmin', 'hmax'):
+            try:
+                seconds = float(text[key])
+            except ValueError:
+                seconds = float('nan')
+            if not 0.1 <= seconds <= 600 or abs(seconds * 10 - round(seconds * 10)) > 1e-06:
+                raise FieldError(key, f'{NAMES[key]}: 0.1–600 секунд, 0.1-ийн алхамтай.')
+            values[key] = round(seconds * 10)
+        if values['amin'] > values['amax']:
+            raise FieldError('amin', 'Программчлах: min нь max-аас их байж болохгүй.')
+        if values['hmin'] > values['hmax']:
+            raise FieldError('hmin', 'Тусламж: min нь max-аас их байж болохгүй.')
+        values['seed'] = whole('seed', 0, 4294967295)
+        return values
+
     def reset(self):
         try:
-            f = self.fields
-            try:
-                values = {k: int(f[k].get()) for k in ('n', 'chairs', 'seed')}
-                times = {k: float(f[k].get()) for k in ('amin', 'amax', 'hmin', 'hmax')}
-            except ValueError:
-                raise ValueError('Буруу утга орууллаа.')
-            if not 1 <= values['n'] <= 40 or not 0 <= values['chairs'] <= 20:
-                raise ValueError('Буруу утга орууллаа.')
-            if not 0 <= values['seed'] <= 4294967295:
-                raise ValueError('Seed: 0–4294967295.')
-            for k in ('amin', 'amax', 'hmin', 'hmax'):
-                x = times[k]
-                if not 0.1 <= x <= 600 or abs(x * 10 - round(x * 10)) > 1e-06:
-                    raise ValueError('Хугацаа: 0.1–600 секунд, 0.1-ийн алхамтай.')
-                values[k] = round(x * 10)
+            values = self.read_config()
             self.model.reset(**values)
+        except FieldError as e:
+            self.show_error(str(e), e.key)
+            return
         except (ValueError, OverflowError, OSError) as e:
-            if not self.model.snapshot()['active']:
-                self.running = False
-            messagebox.showerror('Тохиргооны алдаа', str(e))
+            self.show_error(str(e))
             return
         self.running = False
         self.config = values
+        self.applied = {k: v.get().strip() for k, v in self.fields.items()}
+        self.update_pending()
         self.draw()
+
+    def show_error(self, message, key=None):
+        if not self.model.snapshot()['active']:
+            self.running = False
+        messagebox.showerror('Тохиргооны алдаа', message)
+        if key:
+            self.entries[key].focus_set()
+            self.entries[key].select_range(0, 'end')
+
+    def update_pending(self):
+        """Mark fields edited after the last Reset; they apply only on Reset."""
+        if not hasattr(self, 'applied'):
+            return
+        changed = {k for k, v in self.fields.items() if v.get().strip() != self.applied[k]}
+        for key, (label, group) in self.group_labels.items():
+            keys = [k for k, (other, g) in self.group_labels.items() if g == group]
+            label.configure(text=group + (' *' if changed & set(keys) else ''))
+        self.pending.configure(text='* Reset дарж хэрэглэнэ' if changed else '')
 
     def play(self):
         if not self.model.snapshot()['active']:

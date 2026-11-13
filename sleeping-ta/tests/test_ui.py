@@ -81,3 +81,24 @@ class UiTests(unittest.TestCase):
                 self.assertLessEqual(self.app.stats.winfo_reqwidth(), main.winfo_width())
                 bottom = self.app.canvas.bbox('all')[3]
                 self.assertLessEqual(bottom, self.app.canvas.winfo_height())
+
+    def test_error_names_the_field_and_range(self):
+        cases = [('n', '41', 'Оюутан: 1–40'), ('chairs', 'abc', 'Сандал: 0–20'),
+                 ('amin', '0.05', 'Программчлах min'), ('hmin', '9', 'Тусламж: min'),
+                 ('seed', '-1', 'Seed: 0–4294967295')]
+        for field, value, expected in cases:
+            with self.subTest(field=field):
+                old = self.app.fields[field].get()
+                self.app.fields[field].set(value)
+                with patch('app.messagebox.showerror') as error:
+                    self.app.reset()
+                self.assertIn(expected, error.call_args[0][1])
+                self.app.fields[field].set(old)
+
+    def test_unapplied_change_is_marked(self):
+        self.assertEqual(self.app.pending.cget('text'), '')
+        self.app.fields['chairs'].set('5')
+        self.assertIn('Reset', self.app.pending.cget('text'))
+        self.app.reset()
+        self.assertEqual(self.app.pending.cget('text'), '')
+        self.assertEqual(self.app.model.snapshot()['queue'], [])
