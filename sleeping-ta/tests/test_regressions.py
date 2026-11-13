@@ -79,6 +79,14 @@ class RegressionTests(unittest.TestCase):
         self.assertEqual(self.model.recent_events(), '0,sleep,0,0\n')
         self.assertEqual(self.model.snapshot()['tick'], 0)
 
+    def test_help_is_spread_across_students(self):
+        # Manual 7 long run: a fixed student order served only 4 of 40.
+        self.model.reset(n=40, chairs=0, amin=1, amax=1, hmin=10, hmax=10)
+        for _ in range(1010):
+            snapshot = self.model.step()
+        served = sum(1 for s in snapshot['students'] if s['visits'])
+        self.assertGreaterEqual(served, 30)
+
     def test_close_is_repeatable_idle_and_busy(self):
         for steps in (0, 1, 10):
             self.model.reset(n=4, amin=1, amax=1, hmin=10, hmax=10)

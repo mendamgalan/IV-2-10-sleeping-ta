@@ -25,7 +25,7 @@ static int active, stopping, now, current = -1, queue[MAX_STUDENTS];
 static int waiting_count, remaining, state[MAX_STUDENTS], due[MAX_STUDENTS];
 static int visits[MAX_STUDENTS], joined[MAX_STUDENTS];
 static int rejected, completed, arrivals, busy, wait_sum;
-static uint32_t rng;
+static uint32_t rng, order_rng;
 static int common_sems, tick_sems, done_sems, ta_created, students_created;
 
 /* Full history lives in a temporary file, not a fixed-size memory buffer.
@@ -49,9 +49,15 @@ static void wait_sem(sem_t *sem) {
     }
 }
 
+/* LCG low bits repeat with a short period, so use the high bits. */
 static int random_between(int low, int high) {
     rng = rng * 1664525u + 1013904223u;
-    return low + (int)(rng % (unsigned)(high - low + 1));
+    return low + (int)((rng >> 16) % (unsigned)(high - low + 1));
+}
+
+static int random_index(int bound) {
+    order_rng = order_rng * 1664525u + 1013904223u;
+    return (int)((order_rng >> 16) % (unsigned)bound);
 }
 
 static void record_event(const char *kind, int id) {
@@ -225,6 +231,7 @@ int sim_init(int count, int seats, int amin, int amax,
     help_min = hmin;
     help_max = hmax;
     rng = seed;
+    order_rng = seed ^ 0x9e3779b9u;
     stopping = now = waiting_count = rejected = completed = arrivals = 0;
     busy = wait_sum = remaining = journal_error = 0;
     current = -1;
@@ -283,9 +290,20 @@ void sim_step(void) {
         sem_post(&ta_tick);
         wait_sem(&ack);
     }
+    /* Real threads reach the lock in no fixed order. A seeded shuffle keeps
+     * runs reproducible without serving the same students every tick. */
+    int order[MAX_STUDENTS];
+    for (int i = 0; i < n; i++) {
+        order[i] = i;
+    }
+    for (int i = n - 1; i > 0; i--) {
+        int j = random_index(i + 1);
+        int swap = order[i];
+        order[i] = order[j];
+        order[j] = swap;
+    }
     for (int k = 0; k < n; k++) {
-        int i = (k + now) % n;
-        sem_post(&ticks[i]);
+        sem_post(&ticks[order[k]]);
         wait_sem(&ack);
     }
     /* Detect buffered disk write failures promptly, not only on export. */
