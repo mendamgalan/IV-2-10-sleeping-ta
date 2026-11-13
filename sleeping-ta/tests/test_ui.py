@@ -61,3 +61,23 @@ class UiTests(unittest.TestCase):
         with patch.object(self.app.model, 'snapshot', return_value=snapshot):
             self.app.draw()
         self.assertIn('алдаа', self.app.warning.cget('text'))
+
+    def test_layout_fits_default_and_minimum_window(self):
+        self.root.deiconify()
+        self.app.fields['n'].set('40')
+        self.app.fields['chairs'].set('20')
+        self.app.reset()
+        for size in ('1120x800', '980x740'):
+            with self.subTest(size=size):
+                self.root.geometry(size)
+                self.root.update()
+                self.app.draw()
+                self.root.update()
+                main = self.app.hint.master
+                for widget in (self.app.hint, self.app.stats, self.app.log, self.app.bar):
+                    self.assertTrue(widget.winfo_ismapped())
+                    self.assertLessEqual(widget.winfo_y() + widget.winfo_height(), main.winfo_height())
+                self.assertGreaterEqual(self.app.log.winfo_height(), self.app.log.winfo_reqheight())
+                self.assertLessEqual(self.app.stats.winfo_reqwidth(), main.winfo_width())
+                bottom = self.app.canvas.bbox('all')[3]
+                self.assertLessEqual(bottom, self.app.canvas.winfo_height())

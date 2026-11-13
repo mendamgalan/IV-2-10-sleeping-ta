@@ -1,51 +1,90 @@
 # UI input validation includes the checks contributed by Оргилсайхан.
 import tkinter as tk
+import tkinter.font as tkfont
 from tkinter import ttk, messagebox, filedialog
 from model import Model
+
+BG = '#101827'
+MUTED = '#9fb0c8'
+STATE_LABELS = ['Программчилж байна', 'Сандал дээр хүлээж байна', 'Тусламж авч байна']
+STATE_COLORS = ['#77b7f7', '#eac16b', '#72e2b6']
+# key, group label, sub label, default
+FIELDS = [
+    ('n', 'Оюутан', '', '8'),
+    ('chairs', 'Сандал', '', '3'),
+    ('amin', 'Программчлах, с', 'min', '1'),
+    ('amax', 'Программчлах, с', 'max', '4'),
+    ('hmin', 'Тусламж, с', 'min', '1.5'),
+    ('hmax', 'Тусламж, с', 'max', '3'),
+    ('seed', 'Seed', '', '42'),
+]
+HINT = ('1 алхам = загварын 100 мс. Программчлах = тусламжийн дараа дахин ирэх хүртэлх хугацаа. '
+        'Талбарыг өөрчилсний дараа Reset дарна.')
+COLS, ROW_H, STUDENTS_Y = 10, 44, 172
+
 
 class App:
 
     def __init__(self, root):
         self.root, self.running = (root, False)
-        root.title('Sleeping Teaching Assistant • F.CSM302 / 10')
+        root.title('Sleeping Teaching Assistant • F.CSM302 / IV-2-10')
         root.geometry('1120x800')
         root.minsize(980, 740)
-        root.configure(bg='#101827')
+        root.configure(bg=BG)
         self.model = Model()
         style = ttk.Style()
         style.theme_use('clam')
-        style.configure('TFrame', background='#101827')
-        style.configure('TLabel', background='#101827', foreground='#e6edf7', font=('DejaVu Sans', 10))
-        style.configure('TButton', font=('DejaVu Sans', 10), padding=8)
-        main = ttk.Frame(root, padding=20)
+        style.configure('TFrame', background=BG)
+        style.configure('TLabel', background=BG, foreground='#e6edf7', font=('DejaVu Sans', 10))
+        style.configure('TButton', font=('DejaVu Sans', 10), padding=6)
+        style.configure('TCheckbutton', background=BG, foreground='#e6edf7', font=('DejaVu Sans', 10))
+        self.small = tkfont.Font(family='DejaVu Sans', size=9)
+        main = ttk.Frame(root, padding=(18, 14))
         main.pack(fill='both', expand=True)
-        ttk.Label(main, text='THE SLEEPING TEACHING ASSISTANT', font=('DejaVu Sans', 21, 'bold')).pack(anchor='w')
-        ttk.Label(main, text='10 / Үйлдлийн систем     •     Бодит Pthreads + mutex + semaphore').pack(anchor='w', pady=(4, 18))
+
+        header = ttk.Frame(main)
+        header.pack(fill='x')
+        ttk.Label(header, text='THE SLEEPING TEACHING ASSISTANT', font=('DejaVu Sans', 18, 'bold')).pack(side='left')
+        ttk.Label(header, text='IV-2-10 · POSIX threads + mutex + semaphore', foreground=MUTED).pack(side='right')
+
         form = ttk.Frame(main)
-        form.pack(fill='x')
-        self.fields = {}
-        for i, (key, label, value) in enumerate([('n', 'Оюутан', 8), ('chairs', 'Сандал', 3), ('amin', 'Ирэх min (сек)', 1), ('amax', 'Ирэх max (сек)', 4), ('hmin', 'Туслах min (сек)', 1.5), ('hmax', 'Туслах max (сек)', 3), ('seed', 'Seed', 42)]):
-            box = ttk.Frame(form)
-            box.grid(row=0, column=i, padx=(0, 12), sticky='w')
-            ttk.Label(box, text=label).pack(anchor='w')
-            v = tk.StringVar(value=str(value))
-            self.fields[key] = v
-            ttk.Entry(box, textvariable=v, width=11).pack(pady=5)
-        bar = ttk.Frame(main)
-        bar.pack(fill='x', pady=12)
-        for label, cmd in [('▶ Ажиллуулах', self.play), ('Ⅱ Түр зогсоох', self.pause), ('→ Алхам +0.1с', self.step), ('↺ Тохиргоогоор reset', self.reset), ('CSV хадгалах', self.export)]:
-            ttk.Button(bar, text=label, command=cmd).pack(side='left', padx=(0, 8))
+        form.pack(fill='x', pady=(10, 0))
+        self.fields, self.entries, self.group_labels, groups = {}, {}, {}, {}
+        for key, group, sub, default in FIELDS:
+            if group not in groups:
+                box = ttk.Frame(form)
+                box.pack(side='left', padx=(0, 18))
+                label = ttk.Label(box, text=group)
+                label.pack(anchor='w')
+                row = ttk.Frame(box)
+                row.pack(anchor='w', pady=(3, 0))
+                groups[group] = (label, row)
+            label, row = groups[group]
+            if sub:
+                ttk.Label(row, text=sub, foreground=MUTED).pack(side='left', padx=(0, 3))
+            var = tk.StringVar(value=default)
+            entry = ttk.Entry(row, textvariable=var, width=7)
+            entry.pack(side='left', padx=(0, 8))
+            self.fields[key], self.entries[key] = var, entry
+            self.group_labels[key] = (label, group)
+
+        self.bar = ttk.Frame(main)
+        self.bar.pack(fill='x', pady=8)
+        for label, cmd in [('▶ Ажиллуулах', self.play), ('Ⅱ Түр зогсоох', self.pause), ('→ Алхам +0.1с', self.step),
+                           ('↺ Reset', self.reset), ('CSV хадгалах', self.export)]:
+            ttk.Button(self.bar, text=label, command=cmd).pack(side='left', padx=(0, 8))
+        self.hint = ttk.Label(main, text=HINT, foreground=MUTED, font=('DejaVu Sans', 9))
+        self.hint.pack(anchor='w')
         self.stats = ttk.Label(main, text='')
-        self.stats.pack(anchor='w', pady=(0, 10))
+        self.stats.pack(anchor='w', pady=(4, 2))
+        main.bind('<Configure>', lambda e: self.stats.configure(wraplength=e.width - 40), add='+')
         self.warning = ttk.Label(main, text='', foreground='#ffb4a2')
-        self.warning.pack(anchor='w')
-        self.canvas = tk.Canvas(main, bg='#18243a', highlightthickness=0, height=370)
+        # Packed before the canvas so a small window shrinks the canvas, not the log.
+        self.log = tk.Text(main, height=6, bg='#0b1220', fg='#c7d5e8', font=('DejaVu Sans Mono', 10), relief='flat')
+        self.log.pack(side='bottom', fill='x', pady=(6, 0))
+        self.canvas = tk.Canvas(main, bg='#18243a', highlightthickness=0, height=360)
         self.canvas.pack(fill='both', expand=True)
         self.canvas.bind('<Configure>', lambda e: self.draw())
-        ttk.Label(main, text='Цэнхэр: программчилж байна   •   Шар: хүлээж байна   •   Ногоон: тусламж авч байна').pack(anchor='w', pady=8)
-        self.log = tk.Text(main, height=6, bg='#0b1220', fg='#c7d5e8', font=('DejaVu Sans Mono', 10), relief='flat')
-        self.log.pack(fill='x')
-        ttk.Label(main, text='1 алхам = загварын 100 мс. Тохиргоог reset дарж хэрэглэнэ. Ирэх завсар нь оюутан бүрийн программчлах хугацаа.').pack(anchor='w', pady=7)
         self.reset()
         root.protocol('WM_DELETE_WINDOW', self.close)
         root.after(100, self.loop)
@@ -97,42 +136,67 @@ class App:
             self.draw()
         self.root.after(100, self.loop)
 
+    def text(self, x, y, t, color='#e6edf7', size=12, anchor='w', bold=False):
+        font = ('DejaVu Sans', size, 'bold') if bold else ('DejaVu Sans', size)
+        self.canvas.create_text(x, y, text=t, fill=color, font=font, anchor=anchor)
+
     def draw(self):
         if not hasattr(self, 'config'):
             return
         s = self.model.snapshot()
         c = self.canvas
         c.delete('all')
-        w = max(c.winfo_width(), 940)
-        self.stats.config(text=f"Хугацаа {s['tick'] / 10:.1f} с     |     Ирэлт {s['arrivals']}     |     Дууссан {s['completed']}     |     Сандалгүй буцсан {s['rejected']}     |     Хүлээлт {len(s['queue'])}/{self.config['chairs']}")
+        w = max(c.winfo_width(), 900)
+        queue, current, chairs = s['queue'], s['current'], self.config['chairs']
+        helped = s['completed'] + (current >= 0)
+        wait = s['wait_sum'] / helped / 10 if helped else 0.0
+        load = 100 * s['busy'] / s['tick'] if s['tick'] else 0.0
+        self.stats.config(text=f"Хугацаа {s['tick'] / 10:.1f} с  ·  Ирэлт {s['arrivals']}  ·  "
+                               f"Тусламж дууссан {s['completed']}  ·  Сандалгүй буцсан {s['rejected']}  ·  "
+                               f"Хүлээлт {len(queue)}/{chairs}  ·  Дундаж хүлээлт {wait:.1f} с  ·  "
+                               f"TA ачаалал {load:.0f} %")
 
-        def text(x, y, t, color='#e6edf7', size=12):
-            c.create_text(x, y, text=t, fill=color, font=('DejaVu Sans', size), anchor='w')
-        c.create_rectangle(20, 20, 280, 165, fill='#22334d', outline='#41536b')
-        text(38, 43, 'TA / ӨРӨӨ', size=14)
-        text(38, 78, 'Унтаж байна • Zzz' if s['current'] < 0 else f"Оюутан {s['current'] + 1}-д тусалж байна", '#72e2b6' if s['current'] >= 0 else '#a9bbd3')
-        text(38, 115, f"Үлдсэн: {s['remaining'] / 10:.1f} с" if s['current'] >= 0 else 'Ирэх оюутныг хүлээнэ')
-        text(310, 35, 'ХҮЛЭЭЛГИЙН ДАРААЛАЛ → FIFO', size=13)
-        seats = self.config['chairs']
-        cols = 10
-        if not seats:
-            text(310, 85, 'Сандалгүй: зөвхөн TA сул үед орно.')
-        for i in range(seats):
-            x = 310 + i % cols * max(48, (w - 340) / cols)
-            y = 60 + i // cols * 58
-            occupied = i < len(s['queue'])
-            color = '#eac16b' if occupied else '#2b3d56'
-            c.create_rectangle(x, y, x + 45, y + 40, fill=color, outline='')
-            text(x + 5, y + 20, str(s['queue'][i] + 1) if occupied else '—', '#17243a' if occupied else '#8195b2')
-        text(20, 195, 'ОЮУТНУУД / төлөв ба авсан тусламж', size=13)
-        labels = ['Код', 'Хүлээнэ', 'Тусламж']
-        colors = ['#77b7f7', '#eac16b', '#72e2b6']
+        c.create_rectangle(16, 12, 286, 132, fill='#22334d', outline='#41536b')
+        self.text(32, 34, 'TA / ӨРӨӨ', size=13)
+        if current >= 0:
+            self.text(32, 68, f'S{current + 1}-д тусалж байна', STATE_COLORS[2])
+            self.text(32, 102, f"Үлдсэн: {s['remaining'] / 10:.1f} с", size=11)
+        else:
+            self.text(32, 68, 'Унтаж байна · Zzz', MUTED)
+            self.text(32, 102, 'Ирэх оюутныг хүлээнэ', size=11)
+
+        self.text(310, 24, 'ХҮЛЭЭЛГИЙН ДАРААЛАЛ (FIFO) → TA', size=12)
+        if not chairs:
+            self.text(310, 70, 'Сандалгүй: TA сул үед л тусламж авна.', size=11)
+        gap = max(48, (w - 330) / 10)
+        for i in range(chairs):
+            x, y = 310 + i % 10 * gap, 44 + i // 10 * 46
+            occupied = i < len(queue)
+            c.create_rectangle(x, y, x + 44, y + 38, fill=STATE_COLORS[1] if occupied else '#2b3d56', outline='')
+            self.text(x + 22, y + 19, f'S{queue[i] + 1}' if occupied else '—',
+                      '#13203a' if occupied else '#8195b2', 11, anchor='center', bold=occupied)
+
+        self.text(16, 150, 'ОЮУТНУУД', size=12)
+        x = 130
+        for color, label in zip(STATE_COLORS, STATE_LABELS):
+            c.create_rectangle(x, 144, x + 12, 156, fill=color, outline='')
+            self.text(x + 18, 150, label, MUTED, 9)
+            x += 18 + self.small.measure(label) + 24
+        cell = (w - 32) / COLS
+        badge = min(cell - 10, 84)
         for i, student in enumerate(s['students']):
-            x = 20 + i % 10 * ((w - 40) / 10)
-            y = 218 + i // 10 * 45
-            text(x, y, f"S{i + 1} · {labels[student['state']]}", colors[student['state']], 10)
-            text(x, y + 17, f"{student['visits']} удаа", '#8ea2bd', 9)
-        self.warning.config(text='Журнал бичихэд алдаа гарлаа. Дискний зайг шалгаад reset хийнэ; CSV бүрэн биш.' if s['journal_error'] else '')
+            x = 16 + i % COLS * cell
+            y = STUDENTS_Y + i // COLS * ROW_H
+            c.create_rectangle(x, y, x + badge, y + 22, fill=STATE_COLORS[student['state']], outline='')
+            self.text(x + badge / 2, y + 11, f'S{i + 1}', '#13203a', 10, anchor='center', bold=True)
+            self.text(x, y + 33, f"{student['visits']} удаа", '#8ea2bd', 9)
+
+        message = 'Журнал бичихэд алдаа гарлаа. Дискний зайг шалгаад reset хийнэ; CSV бүрэн биш.' if s['journal_error'] else ''
+        self.warning.config(text=message)
+        if message and not self.warning.winfo_manager():
+            self.warning.pack(after=self.stats, anchor='w')
+        elif not message and self.warning.winfo_manager():
+            self.warning.pack_forget()
         lines = self.model.recent_events().splitlines()
         self.log.configure(state='normal')
         self.log.delete('1.0', 'end')
@@ -150,6 +214,8 @@ class App:
     def close(self):
         self.model.close()
         self.root.destroy()
+
+
 if __name__ == '__main__':
     try:
         App(tk.Tk()).root.mainloop()
