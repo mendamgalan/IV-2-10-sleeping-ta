@@ -74,9 +74,16 @@ class Model:
     def export(self, filename):
         """Stream to a sibling temporary file and replace only on success."""
         destination = Path(filename).absolute()
+        try:
+            mode = destination.stat().st_mode & 0o777  # keep an existing file's mode
+        except FileNotFoundError:
+            umask = os.umask(0)
+            os.umask(umask)
+            mode = 0o666 & ~umask  # same as a normally created file
         fd, temporary = tempfile.mkstemp(prefix='.ta-export-', dir=destination.parent)
         os.close(fd)
         try:
+            os.chmod(temporary, mode)
             if self.lib.sim_export(os.fsencode(temporary)):
                 raise OSError('CSV бүрэн хадгалагдсангүй. Дискний зай, эрхийг шалгана.')
             os.replace(temporary, destination)

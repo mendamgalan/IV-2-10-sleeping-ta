@@ -1,6 +1,7 @@
 """Regression checks for journal capacity, ctypes validation and lifecycle."""
 import csv
 import io
+import os
 import sys
 import tempfile
 import unittest
@@ -59,6 +60,21 @@ class RegressionTests(unittest.TestCase):
             self.assertEqual(list(Path(folder).glob('.ta-export-*')), [])
         self.model.step()  # Reading/exporting must leave the append position intact.
         self.assertEqual(int(self.model.events().splitlines()[-1].split(',')[0]), 1001)
+
+    def test_export_keeps_normal_file_mode(self):
+        umask = os.umask(0o022)
+        try:
+            with tempfile.TemporaryDirectory() as folder:
+                fresh = Path(folder) / 'new.csv'
+                self.model.export(fresh)
+                self.assertEqual(fresh.stat().st_mode & 0o777, 0o644)
+                shared = Path(folder) / 'shared.csv'
+                shared.write_text('old', encoding='utf-8')
+                shared.chmod(0o664)
+                self.model.export(shared)
+                self.assertEqual(shared.stat().st_mode & 0o777, 0o664)
+        finally:
+            os.umask(umask)
 
     def test_failed_export_preserves_existing_file(self):
         with tempfile.TemporaryDirectory() as folder:
