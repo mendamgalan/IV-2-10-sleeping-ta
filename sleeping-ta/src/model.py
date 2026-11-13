@@ -17,6 +17,8 @@ class Model:
             function = getattr(self.lib, name)
             function.argtypes = []
             function.restype = ctypes.c_char_p
+        self.lib.sim_set_free.argtypes = [ctypes.c_int]
+        self.lib.sim_set_free.restype = None
         for name in ('sim_close', 'sim_step'):
             function = getattr(self.lib, name)
             function.argtypes = []
@@ -25,7 +27,7 @@ class Model:
         self.lib.sim_export.restype = ctypes.c_int
 
     def reset(self, n=8, chairs=3, amin=10, amax=40,
-              hmin=15, hmax=30, seed=42):
+              hmin=15, hmax=30, seed=42, free=False):
         # Validate BEFORE ctypes can wrap large Python integers to C integers.
         limits = {
             'n': (n, 1, 40),
@@ -39,6 +41,8 @@ class Model:
         for name, (value, low, high) in limits.items():
             if type(value) is not int or not low <= value <= high:
                 raise ValueError(f'{name}: {low}–{high} хооронд бүхэл тоо оруулна.')
+        if type(free) is not bool:
+            raise ValueError('free: True эсвэл False байна.')
         if amin > amax or hmin > hmax:
             raise ValueError('Ирэх болон туслах хугацааны min ≤ max байна.')
         result = self.lib.sim_init(n, chairs, amin, amax, hmin, hmax, seed)
@@ -48,6 +52,7 @@ class Model:
             raise OSError('Thread эсвэл semaphore үүсгэж чадсангүй. Reset хийж дахин оролдоно.')
         if result:
             raise ValueError('Хөдөлгүүр тохиргоог хүлээн авсангүй.')
+        self.lib.sim_set_free(int(free))
 
     def step(self):
         self.lib.sim_step()

@@ -36,6 +36,7 @@ static int rejected, completed, arrivals, busy, wait_sum;
 static uint32_t rng, order_rng;
 static int common_sems, tick_sems, called_sems, done_sems;
 static int ta_created, students_created;
+static int free_mode;
 
 /* Full history lives in a temporary file, not a fixed-size memory buffer.
  * The UI reads only this small ring; exporting streams the complete file. */
@@ -358,14 +359,32 @@ void sim_step(void) {
         order[i] = order[j];
         order[j] = swap;
     }
-    for (int k = 0; k < count; k++) {
-        sem_post(&ticks[order[k]]);
-        wait_sem(&ack);
+    if (free_mode) {
+        /* Free mode: all programming students run at once and race for the
+         * TA, the chairs and the lock. Event order is up to the OS. */
+        for (int k = 0; k < count; k++) {
+            sem_post(&ticks[order[k]]);
+        }
+        for (int k = 0; k < count; k++) {
+            wait_sem(&ack);
+        }
+    } else {
+        for (int k = 0; k < count; k++) {
+            sem_post(&ticks[order[k]]);
+            wait_sem(&ack);
+        }
     }
     /* Detect buffered disk write failures promptly, not only on export. */
     if (!journal_error && fflush(journal) != 0) {
         journal_error = 1;
     }
+}
+
+/* Called between steps: 0 = reproducible order, 1 = free running. */
+void sim_set_free(int on) {
+    pthread_mutex_lock(&mu);
+    free_mode = on != 0;
+    pthread_mutex_unlock(&mu);
 }
 
 const char *sim_snapshot(void) {
@@ -374,9 +393,9 @@ const char *sim_snapshot(void) {
     int p = snprintf(out, sizeof(out),
         "{\"tick\":%d,\"current\":%d,\"remaining\":%d,\"arrivals\":%d,"
         "\"rejected\":%d,\"completed\":%d,\"busy\":%d,\"wait_sum\":%d,"
-        "\"active\":%d,\"journal_error\":%d,\"queue\":[",
+        "\"active\":%d,\"journal_error\":%d,\"free\":%d,\"queue\":[",
         now, current, remaining, arrivals, rejected, completed, busy, wait_sum,
-        active, journal_error);
+        active, journal_error, free_mode);
     for (int i = 0; i < waiting_count; i++) {
         p += snprintf(out + p, sizeof(out) - (size_t)p,
                       "%s%d", i ? "," : "", queue[i]);

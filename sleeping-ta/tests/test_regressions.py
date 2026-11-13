@@ -27,7 +27,7 @@ class RegressionTests(unittest.TestCase):
             {'n': True}, {'n': 1.0}, {'n': '8'}, {'seed': None},
             {'amax': float('inf')}, {'hmin': float('nan')},
             {'amin': 3, 'amax': 2}, {'hmin': 3, 'hmax': 2},
-            {'amax': 6001}, {'hmin': 0},
+            {'amax': 6001}, {'hmin': 0}, {'free': 1},
         ]
         for values in invalid:
             with self.subTest(values=values):
@@ -86,6 +86,24 @@ class RegressionTests(unittest.TestCase):
             snapshot = self.model.step()
         served = sum(1 for s in snapshot['students'] if s['visits'])
         self.assertGreaterEqual(served, 30)
+
+    def test_free_mode_keeps_invariants(self):
+        configs = [(40, 3, 1, 3, 1, 4), (40, 0, 1, 1, 2, 2), (10, 5, 1, 9, 1, 9)]
+        for n, chairs, amin, amax, hmin, hmax in configs:
+            self.model.reset(n=n, chairs=chairs, amin=amin, amax=amax,
+                             hmin=hmin, hmax=hmax, free=True)
+            for _ in range(500):
+                s = self.model.step()
+                q, cur = s['queue'], s['current']
+                states = [x['state'] for x in s['students']]
+                self.assertTrue(s['free'])
+                self.assertLessEqual(len(q), chairs)
+                self.assertEqual(len(q), len(set(q)))
+                self.assertEqual(states.count(1), len(q))
+                self.assertEqual(states.count(2), int(cur >= 0))
+                self.assertEqual(s['arrivals'],
+                                 s['rejected'] + s['completed'] + len(q) + int(cur >= 0))
+            self.assertGreater(s['completed'], 0)
 
     def test_close_is_repeatable_idle_and_busy(self):
         for steps in (0, 1, 10):
