@@ -306,5 +306,5 @@ UI-ийн дүрслэл ба цаг, баримтын нийцлийг заса
 2. F.CSM302 — OS_BD1_Guide.pdf, OS_Peer_Review_Guide.pdf.
 3. POSIX: `pthread_create(3)`, `pthread_mutex_lock(3)`, `sem_init(3)`, `sem_wait(3)`, `sem_post(3)`.
 4. Python: `tkinter`, `ctypes` баримт бичиг; GCC ThreadSanitizer.
-5. AI хэрэглээ: OpenAI ChatGPT (v1.0 код, тест, баримт бичиг), Claude (v1.1-ийн дотоод шүүмж,
-   засвар, тайлан). Бүх үр дүнг баг өөрсдийн машин дээр ажиллуулж шалгав.
+5. AI хэрэглээ: OpenAI ChatGPT (v1.0 код, тест, баримт бичиг); Claude — v1.1-ийн өмнөх дотоод
+   шүүмж (feedback). Бүх үр дүнг баг өөрсдийн машин дээр ажиллуулж шалгав.
