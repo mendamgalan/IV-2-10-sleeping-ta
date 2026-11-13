@@ -110,7 +110,7 @@ class App:
         self.canvas.bind('<Configure>', lambda e: self.draw())
         self.reset()
         root.protocol('WM_DELETE_WINDOW', self.close)
-        root.after(100, self.loop)
+        self.timer = root.after(FRAME_MS, self.loop)
 
     def read_config(self):
         text = {k: v.get().strip() for k, v in self.fields.items()}
@@ -197,6 +197,7 @@ class App:
 
     def loop(self):
         """Keep model time equal to wall time × speed, whatever draw() costs."""
+        self.root.after_cancel(self.timer)  # keep exactly one timer pending
         if self.running:
             start, first_tick = self.clock
             speed = SPEEDS.get(self.speed.get(), 1)
@@ -209,7 +210,7 @@ class App:
             if missing > 0:
                 self.model.advance(missing)
                 self.draw()
-        self.root.after(FRAME_MS, self.loop)
+        self.timer = self.root.after(FRAME_MS, self.loop)
 
     def text(self, x, y, t, color='#e6edf7', size=12, anchor='w', bold=False):
         font = ('DejaVu Sans', size, 'bold') if bold else ('DejaVu Sans', size)
@@ -288,6 +289,7 @@ class App:
                 messagebox.showerror('Хадгалах алдаа', str(e))
 
     def close(self):
+        self.root.after_cancel(self.timer)  # no callback may run after destroy
         self.model.close()
         self.root.destroy()
 
