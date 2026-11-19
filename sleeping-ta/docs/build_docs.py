@@ -1,4 +1,4 @@
-"""Build IV-2-10_BD2_Report.pdf and IV-2-10_Manual.pdf from the Markdown sources.
+"""Build IV-2-10_Final_Report.pdf and IV-2-10_Manual.pdf from the Markdown sources.
 
 Usage (from sleeping-ta/):  make docs
 Needs python3-markdown and LibreOffice Writer (soffice). The Markdown files are
@@ -20,7 +20,7 @@ except ImportError:
 DOCS = Path(__file__).resolve().parent
 TEXT_WIDTH = 640  # px available between the page margins
 # Fixed column widths (px) for tables whose first header cell matches.
-COLUMN_WIDTHS = {'Гишүүн': (190, 210, 240)}
+COLUMN_WIDTHS = {'Гишүүн': (190, 210, 240), '№': (24, 150, 62, 74, 330)}
 
 STYLE = """
 @page { size: 21cm 29.7cm; margin: 2cm 2cm 2cm 2.5cm; }
@@ -41,7 +41,7 @@ COVER = """
 <p align="center" style="margin-top:2.2cm"><font face="Times New Roman" style="font-size:18pt">F.CSM302 Үйлдлийн систем</font></p>
 <p align="center" style="margin-top:0.8cm"><font face="Times New Roman" style="font-size:30pt"><b>{title}</b></font></p>
 <p align="center" style="margin-top:0.4cm"><font face="Times New Roman" style="font-size:16pt">{subtitle}</font></p>
-<p align="center" style="margin-top:0.3cm"><font face="Times New Roman" style="font-size:12pt">Хувилбар 1.1 · 2026-11-13</font></p>
+<p align="center" style="margin-top:0.3cm"><font face="Times New Roman" style="font-size:12pt">Final release v1.2 · 2026-11-19</font></p>
 <table border="0" cellspacing="0" cellpadding="3" align="center" style="margin-top:2.4cm">
 <tr><td width="170"><font face="Times New Roman" style="font-size:12pt">Шалгасан багш:</font></td><td width="260"><font face="Times New Roman" style="font-size:12pt">Г. Ганбат</font></td></tr>
 <tr><td><font face="Times New Roman" style="font-size:12pt">Багийн дугаар:</font></td><td><font face="Times New Roman" style="font-size:12pt">IV-2-10</font></td></tr>
@@ -110,6 +110,6 @@ if __name__ == '__main__':
     if not shutil.which('soffice'):
         sys.exit('LibreOffice хэрэгтэй: sudo apt install libreoffice-writer')
     # IV-2-10_BD1_Report.pdf is the BD1 submission (v1.0) and is kept as it was.
-    build(DOCS / 'Report.md', DOCS / 'IV-2-10_BD2_Report.pdf',
-          cover={'title': 'The Sleeping Teaching Assistant', 'subtitle': 'Бие даалт №2 — эцсийн тайлан'})
+    build(DOCS / 'Report.md', DOCS / 'IV-2-10_Final_Report.pdf',
+          cover={'title': 'The Sleeping Teaching Assistant', 'subtitle': 'Бие даалт №2 — Final Report'})
     build(DOCS / 'Manual.md', DOCS / 'IV-2-10_Manual.pdf')
