@@ -1,8 +1,9 @@
 IV-2-10 Sleeping TA — test results
-Date: 2026-11-13
-Commit: 66813af (orgil-sandbox)
-OS: Ubuntu 26.04.1 LTS, Linux 7.0.0-42-generic x86_64
+Date: 2026-11-19
+Commit: 50190ae (orgil-sandbox, final release v1.2)
+OS: Ubuntu 26.04.1 LTS, Linux 7.0.0-43-generic x86_64
 Compiler: gcc (Ubuntu 15.2.0-16ubuntu1) 15.2.0
+Make: GNU Make 4.4.1
 Python: 3.14.4, Tk 8.6.17
 
 $ make
@@ -45,7 +46,7 @@ test_pause_step_and_reset (test_ui.UiTests.test_pause_step_and_reset) ... ok
 test_unapplied_change_is_marked (test_ui.UiTests.test_unapplied_change_is_marked) ... ok
 
 ----------------------------------------------------------------------
-Ran 26 tests in 3.148s
+Ran 26 tests in 8.145s
 
 OK
 exit=0
@@ -58,6 +59,6 @@ stress: 5000 free-running ticks, invariants held
 exit=0
 
 $ DISPLAY= make test   (no display: UI tests are skipped)
-Ran 26 tests in 1.145s
+Ran 26 tests in 2.828s
 
 OK (skipped=9)

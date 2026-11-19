@@ -1,13 +1,17 @@
 # The Sleeping Teaching Assistant IV-2-10
 
-F.CSM302 Үйлдлийн систем · Бие даалт 1 · хувилбар 1.1
+F.CSM302 Үйлдлийн систем · Бие даалт 1–2 · final release v1.2
 
 C / POSIX Pthreads хөдөлгүүр, Python Tkinter удирдах цонхтой.
 TA болон оюутан бүр тусдаа OS thread. Сул TA semaphore дээр унтаж, ирсэн оюутан сэрээнэ;
 завгүй үед оюутан сандал дээр FIFO дарааллаар хүлээж, дүүрэн бол дараа ирнэ. Сандал,
 программчлах ба тусламжийн хугацаа, seed-ийг тохируулж, алхамчилж эсвэл бодит цагаар харна.
 
-## Debian / Ubuntu дээр эхлүүлэх
+![Sleeping TA цонх](sleeping-ta/docs/images/running.png)
+
+*8 оюутан, 3 сандал, seed 42, 11.7 с: TA S8-д тусалж, S4, S2, S1 сандал дээр FIFO дарааллаар хүлээж байна.*
+
+## Quick Start (Debian / Ubuntu)
 
 ```bash
 sudo apt update
@@ -20,6 +24,7 @@ make run
 
 Repository-ийн үндсэн хавтсаас бол `make -C sleeping-ta run`. Python-ийн нэмэлт pip сан
 хэрэггүй. Linux desktop шаардлагатай (WSL2 + WSLg туршаагүй). Native Windows/macOS дэмжихгүй.
+Туршсан: Ubuntu 26.04.1, gcc 15.2.0, GNU Make 4.4.1, Python 3.14.4, Tk 8.6.17; CI: GitHub Actions `ubuntu-latest`.
 
 ## Шалгах
 
@@ -50,16 +55,20 @@ GitHub Actions push/PR бүрд `-Werror` build, Xvfb-тэй тест, ThreadSan
 - **Чөлөөт горим:** оюутнууд нэг tick дотор зэрэг ажиллаж TA, сандал, mutex-ийн төлөө өрсөлдөнө.
 
 Хоёр горимд сандал дээрх оюутан `called[i]`, тусламж авч буй оюутан `done[i]` semaphore дээр
-блоклогдож, сул TA `work` дээр унтана. Дэлгэрэнгүй: Report 4–5, 9-р хэсэг.
+блоклогдож, сул TA `work` дээр унтана. Дэлгэрэнгүй: эцсийн тайлангийн 4–5, 10-р хэсэг.
 
 ## Баримт бичиг
 
 - [Хэрэглэгчийн болон operational заавар](sleeping-ta/docs/Manual.md) · [PDF](sleeping-ta/docs/IV-2-10_Manual.pdf)
-- [Тайлан](sleeping-ta/docs/Report.md) · [PDF](sleeping-ta/docs/IV-2-10_BD1_Report.pdf)
+- Final Report (БД2): [Report.md](sleeping-ta/docs/Report.md) · [PDF](sleeping-ta/docs/IV-2-10_Final_Report.pdf)
+- Постер (БД2): [PDF](sleeping-ta/docs/IV-2-10_Poster.pdf) · [PNG](sleeping-ta/docs/IV-2-10_Poster.png)
+- БД1-ийн тайлан (v1.0, илгээсэн хэвээр): [PDF](sleeping-ta/docs/IV-2-10_BD1_Report.pdf)
 - Туршилтыг давтах: `python3 sleeping-ta/docs/experiments.py`
-- PDF-ийг Markdown-оос дахин үүсгэх: `make -C sleeping-ta docs` (`python3-markdown`, LibreOffice)
+- PDF-ийг Markdown-оос дахин үүсгэх: `make -C sleeping-ta docs` (`python3-markdown`, LibreOffice);
+  постер: `make -C sleeping-ta poster` (`weasyprint`)
 
-Хувилбар: `v1.0` — БД1 постын хувилбар, `v1.1` — дотоод шүүмжийн засвартай хувилбар.
+Хувилбар: `v1.0` — БД1 постын хувилбар, `v1.1` — дотоод шүүмжийн засвар, `v1.2` — БД2 final release
+(Final Report, Poster, Manual-тай ижил commit).
 
 Код: `sleeping-ta/src/`; тест: `sleeping-ta/tests/`.
 AI хэрэглээ: OpenAI ChatGPT (v1.0-ийн код, тест, баримт), Claude (v1.1-ийн шүүмж, засвар,

@@ -1,6 +1,6 @@
 # Sleeping Teaching Assistant — хэрэглэгчийн болон operational гарын авлага
 
-IV-2-10 · F.CSM302 Үйлдлийн систем · Бие даалт 1 · хувилбар 1.1
+IV-2-10 · F.CSM302 Үйлдлийн систем · Бие даалт 2 · final release v1.2
 
 ## 1. Зорилго ба дэмжих орчин
 
@@ -135,7 +135,8 @@ make tsan                  # ThreadSanitizer-тэй чөлөөт горимын 
 min > max, seed -1/4294967296 — бүгд талбарын нэртэй мессежээр татгалзана.
 
 Тайлангийн туршилтыг давтах: `python3 docs/experiments.py`. PDF-үүдийг дахин үүсгэх:
-`make docs` (`python3-markdown`, LibreOffice Writer хэрэгтэй).
+`make docs` (`python3-markdown`, LibreOffice Writer хэрэгтэй). Постер: `make poster`
+(`sudo apt install weasyprint`).
 
 ## 11. Мэдэгдэж буй хязгаарлалт
 
