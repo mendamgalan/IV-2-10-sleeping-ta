@@ -35,7 +35,11 @@ tsan: build/stress_tsan
 docs:
 	$(PYTHON) docs/build_docs.py
 
+# One-page poster from docs/poster.html (needs WeasyPrint).
+poster:
+	$(PYTHON) docs/build_poster.py
+
 clean:
 	rm -f libta.so build/resource_failure build/stress build/stress_tsan
 
-.PHONY: all run test tsan docs clean
+.PHONY: all run test tsan docs poster clean
