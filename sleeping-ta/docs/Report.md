@@ -203,7 +203,7 @@ Python тест, `stress.c`, `make tsan` нэмэгдэв. Дотоод шүүм
 | Шалгалт | Хамрах зүйл | Үр дүн |
 |---|---|---|
 | `make` | `-Werror`-тэй build | Анхааруулга 0 |
-| `xvfb-run -a make test` | C 2 + Python 26 тест | Бүгд OK (3.1 с) |
+| `xvfb-run -a make test` | C 2 + Python 26 тест | Бүгд OK |
 | `make tsan` | Чөлөөт горим, 5000 tick | Data race 0 |
 | Дэлгэцгүй `make test` | 17 OK, UI 9 SKIP | OK |
 | GitHub Actions | Push бүрд | Ногоон |
